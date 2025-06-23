@@ -10,10 +10,10 @@ import (
 )
 
 type URLService struct {
-	repo *repository.MySQLRepository
+	repo repository.URLRepository
 }
 
-func NewURLService(repo *repository.MySQLRepository) *URLService {
+func NewURLService(repo repository.URLRepository) *URLService {
 	return &URLService{repo: repo}
 }
 

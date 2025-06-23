@@ -5,11 +5,6 @@ import (
 	"gorm.io/gorm"
 )
 
-type URLRepository interface {
-	Save(originalUrl string, shortedUrl string) error
-	GetOriginalLink(shortedUrl string) (string, bool)
-}
-
 type MySQLRepository struct {
 	db *gorm.DB
 }
