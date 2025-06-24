@@ -41,8 +41,8 @@ func (h *Handler) HandlePost(w http.ResponseWriter, r *http.Request) {
 	}
 
 	shortedUrl = "http://localhost:8080/" + shortedUrl
-	w.WriteHeader(http.StatusCreated)
 	w.Header().Set("Content-Type", "text/plain")
+	w.WriteHeader(http.StatusCreated)
 	_, _ = w.Write([]byte(shortedUrl))
 }
 

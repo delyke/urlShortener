@@ -4,7 +4,6 @@ import (
 	"crypto/rand"
 	"encoding/base64"
 	"errors"
-	"fmt"
 	"github.com/delyke/urlShortener/internal/repository"
 	"strings"
 )
@@ -20,7 +19,6 @@ func NewURLService(repo repository.URLRepository) *URLService {
 var errNotFound = errors.New("url not found")
 
 func (s *URLService) ShortenUrl(originalUrl string) (string, error) {
-	fmt.Println(originalUrl)
 beginShortUrl:
 	shortenUrl := generateShortenUrl()
 	_, errExist := s.GetOriginalUrl(shortenUrl)
