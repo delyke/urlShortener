@@ -18,31 +18,31 @@ func NewURLService(repo repository.URLRepository) *URLService {
 
 var errNotFound = errors.New("url not found")
 
-func (s *URLService) ShortenUrl(originalUrl string) (string, error) {
+func (s *URLService) ShortenURL(originalUrl string) (string, error) {
 beginShortUrl:
-	shortenUrl := generateShortenUrl()
-	_, errExist := s.GetOriginalUrl(shortenUrl)
+	shortenURL := generateShortenURL()
+	_, errExist := s.GetOriginalURL(shortenURL)
 
 	if errExist == nil {
 		goto beginShortUrl
 	}
 
-	err := s.repo.Save(originalUrl, shortenUrl)
+	err := s.repo.Save(originalUrl, shortenURL)
 	if err != nil {
 		return "", err
 	}
-	return shortenUrl, nil
+	return shortenURL, nil
 }
 
-func (s *URLService) GetOriginalUrl(shortenUrl string) (string, error) {
-	url, ok := s.repo.GetOriginalLink(shortenUrl)
-	if ok != true {
+func (s *URLService) GetOriginalURL(shortenURL string) (string, error) {
+	url, ok := s.repo.GetOriginalLink(shortenURL)
+	if !ok {
 		return "", errNotFound
 	}
 	return url, nil
 }
 
-func generateShortenUrl() string {
+func generateShortenURL() string {
 	b := make([]byte, 6)
 	_, _ = rand.Read(b)
 	return strings.TrimRight(base64.URLEncoding.EncodeToString(b), "=")

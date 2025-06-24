@@ -75,6 +75,7 @@ func TestHandler_HandleGet(t *testing.T) {
 			hh(w, request)
 
 			result := w.Result()
+			result.Body.Close()
 
 			assert.Equal(t, tt.want.code, result.StatusCode)
 		})

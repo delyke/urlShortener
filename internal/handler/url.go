@@ -34,7 +34,7 @@ func (h *Handler) HandlePost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	shortedUrl, err := h.service.ShortenUrl(originalUrl)
+	shortedUrl, err := h.service.ShortenURL(originalUrl)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
@@ -58,9 +58,9 @@ func (h *Handler) HandleGet(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	originalUrl, err := h.service.GetOriginalUrl(shortedUrl)
+	originalURL, err := h.service.GetOriginalURL(shortedUrl)
 	if err == nil {
-		http.Redirect(w, r, originalUrl, http.StatusTemporaryRedirect)
+		http.Redirect(w, r, originalURL, http.StatusTemporaryRedirect)
 	} else {
 		w.WriteHeader(http.StatusBadRequest)
 		return

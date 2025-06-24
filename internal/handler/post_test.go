@@ -60,6 +60,7 @@ func TestHandler_HandlePost(t *testing.T) {
 			hh(w, request)
 
 			result := w.Result()
+			result.Body.Close()
 
 			assert.Equal(t, tt.want.code, result.StatusCode)
 			assert.Equal(t, tt.want.contentType, result.Header.Get("Content-Type"))
