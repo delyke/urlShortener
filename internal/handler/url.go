@@ -27,23 +27,23 @@ func (h *Handler) HandlePost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	originalUrl := string(body)
-	originalUrl = strings.TrimSpace(originalUrl)
-	if originalUrl == "" {
+	originalURL := string(body)
+	originalURL = strings.TrimSpace(originalURL)
+	if originalURL == "" {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
-	shortedUrl, err := h.service.ShortenURL(originalUrl)
+	shortedURL, err := h.service.ShortenURL(originalURL)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
-	shortedUrl = "http://localhost:8080/" + shortedUrl
+	shortedURL = "http://localhost:8080/" + shortedURL
 	w.Header().Set("Content-Type", "text/plain")
 	w.WriteHeader(http.StatusCreated)
-	_, _ = w.Write([]byte(shortedUrl))
+	_, _ = w.Write([]byte(shortedURL))
 }
 
 func (h *Handler) HandleGet(w http.ResponseWriter, r *http.Request) {
@@ -52,13 +52,13 @@ func (h *Handler) HandleGet(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	shortedUrl := strings.TrimPrefix(r.URL.Path, "/")
-	if shortedUrl == "" {
+	shortedURL := strings.TrimPrefix(r.URL.Path, "/")
+	if shortedURL == "" {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
-	originalURL, err := h.service.GetOriginalURL(shortedUrl)
+	originalURL, err := h.service.GetOriginalURL(shortedURL)
 	if err == nil {
 		http.Redirect(w, r, originalURL, http.StatusTemporaryRedirect)
 	} else {

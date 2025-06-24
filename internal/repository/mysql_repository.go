@@ -13,16 +13,16 @@ func NewMySQLRepository(db *gorm.DB) *MySQLRepository {
 	return &MySQLRepository{db: db}
 }
 
-func (r *MySQLRepository) Save(originalUrl string, shortedUrl string) error {
-	url := model.URL{OriginalUrl: originalUrl, ShortedUrl: shortedUrl}
+func (r *MySQLRepository) Save(originalURL string, shortedURL string) error {
+	url := model.URL{OriginalURL: originalURL, ShortedURL: shortedURL}
 	return r.db.Create(&url).Error
 }
 
-func (r *MySQLRepository) GetOriginalLink(shortedUrl string) (string, bool) {
+func (r *MySQLRepository) GetOriginalLink(shortedURL string) (string, bool) {
 	var url model.URL
-	err := r.db.Where("shorted_url = ?", shortedUrl).First(&url).Error
+	err := r.db.Where("shorted_url = ?", shortedURL).First(&url).Error
 	if err != nil {
 		return "", false
 	}
-	return url.OriginalUrl, true
+	return url.OriginalURL, true
 }

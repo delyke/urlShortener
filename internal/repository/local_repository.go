@@ -13,16 +13,16 @@ func NewLocalRepository() *LocalRepository {
 	}
 }
 
-func (repo *LocalRepository) Save(originalUrl string, shortedUrl string) error {
+func (repo *LocalRepository) Save(originalURL string, shortedURL string) error {
 	repo.mu.Lock()
 	defer repo.mu.Unlock()
-	repo.data[shortedUrl] = originalUrl
+	repo.data[shortedURL] = originalURL
 	return nil
 }
 
-func (repo *LocalRepository) GetOriginalLink(shortedUrl string) (string, bool) {
+func (repo *LocalRepository) GetOriginalLink(shortedURL string) (string, bool) {
 	repo.mu.RLock()
 	defer repo.mu.RUnlock()
-	originalUrl, ok := repo.data[shortedUrl]
-	return originalUrl, ok
+	originalURL, ok := repo.data[shortedURL]
+	return originalURL, ok
 }

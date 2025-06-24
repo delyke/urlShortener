@@ -18,7 +18,7 @@ func NewURLService(repo repository.URLRepository) *URLService {
 
 var errNotFound = errors.New("url not found")
 
-func (s *URLService) ShortenURL(originalUrl string) (string, error) {
+func (s *URLService) ShortenURL(originalURL string) (string, error) {
 beginShortUrl:
 	shortenURL := generateShortenURL()
 	_, errExist := s.GetOriginalURL(shortenURL)
@@ -27,7 +27,7 @@ beginShortUrl:
 		goto beginShortUrl
 	}
 
-	err := s.repo.Save(originalUrl, shortenURL)
+	err := s.repo.Save(originalURL, shortenURL)
 	if err != nil {
 		return "", err
 	}
