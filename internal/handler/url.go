@@ -43,7 +43,7 @@ func (h *Handler) HandlePost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	shortedURL = fmt.Sprintf("http://%s/%s", config.FlagBaseAddr, shortedURL)
+	shortedURL = fmt.Sprintf("%s/%s", config.FlagBaseAddr, shortedURL)
 	w.Header().Set("Content-Type", "text/plain")
 	w.WriteHeader(http.StatusCreated)
 	_, _ = w.Write([]byte(shortedURL))

@@ -7,6 +7,6 @@ var FlagBaseAddr string
 
 func ParseFlags() {
 	flag.StringVar(&FlagRunAddr, "a", ":8080", "Run server address")
-	flag.StringVar(&FlagBaseAddr, "b", "localhost:8080", "Base server address")
+	flag.StringVar(&FlagBaseAddr, "b", "http://localhost:8080", "Base server address")
 	flag.Parse()
 }
