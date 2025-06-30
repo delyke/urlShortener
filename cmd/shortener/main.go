@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/delyke/urlShortener/internal/app"
 	"github.com/delyke/urlShortener/internal/config/db"
 	"github.com/delyke/urlShortener/internal/handler"
 	"github.com/delyke/urlShortener/internal/repository"
@@ -24,20 +25,7 @@ func main() {
 	}
 	svc := service.NewURLService(repo)
 	h := handler.NewHandler(svc)
-
-	mux := http.NewServeMux()
-	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		if r.Method == "GET" {
-			h.HandleGet(w, r)
-			return
-		} else if r.Method == "POST" && r.URL.Path == "/" {
-			h.HandlePost(w, r)
-			return
-		} else {
-			http.Error(w, "Bad Request", http.StatusBadRequest)
-		}
-	})
-	err := http.ListenAndServe(":8080", mux)
+	err := http.ListenAndServe(":8080", app.NewRouter(h))
 	if err != nil {
 		panic(err)
 	}

@@ -1,7 +1,9 @@
-package handler
+package handler_test
 
 import (
 	"bytes"
+	"github.com/delyke/urlShortener/internal/app"
+	"github.com/delyke/urlShortener/internal/handler"
 	"github.com/delyke/urlShortener/internal/repository"
 	"github.com/delyke/urlShortener/internal/service"
 	"github.com/stretchr/testify/assert"
@@ -57,13 +59,13 @@ func TestHandler_HandleGet(t *testing.T) {
 
 			repo := repository.NewLocalRepository()
 			svc := service.NewURLService(repo)
-			h := NewHandler(svc)
+			h := handler.NewHandler(svc)
+			r := app.NewRouter(h)
 
 			if tt.name == "Redirect to shorted Url" {
 				wPost := httptest.NewRecorder()
 				postRequest := httptest.NewRequest("POST", "/", bytes.NewReader([]byte("https://yandex.com")))
-				postH := http.HandlerFunc(h.HandlePost)
-				postH(wPost, postRequest)
+				r.ServeHTTP(wPost, postRequest)
 				postResult := wPost.Result()
 				body, _ := io.ReadAll(postResult.Body)
 				postResult.Body.Close()
@@ -71,8 +73,7 @@ func TestHandler_HandleGet(t *testing.T) {
 			}
 			w := httptest.NewRecorder()
 			request := httptest.NewRequest(tt.method, tt.request, nil)
-			hh := http.HandlerFunc(h.HandleGet)
-			hh(w, request)
+			r.ServeHTTP(w, request)
 
 			result := w.Result()
 			result.Body.Close()

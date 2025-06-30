@@ -1,17 +1,19 @@
 package handler
 
 import (
+	"fmt"
 	"github.com/delyke/urlShortener/internal/service"
+	"github.com/go-chi/chi/v5"
 	"io"
 	"net/http"
 	"strings"
 )
 
 type Handler struct {
-	service *service.URLService
+	service service.ShortenURLService
 }
 
-func NewHandler(service *service.URLService) *Handler {
+func NewHandler(service service.ShortenURLService) *Handler {
 	return &Handler{service: service}
 }
 
@@ -52,16 +54,13 @@ func (h *Handler) HandleGet(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	shortedURL := strings.TrimPrefix(r.URL.Path, "/")
-	if shortedURL == "" {
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
+	shortedURL := chi.URLParam(r, "shortURL")
 
 	originalURL, err := h.service.GetOriginalURL(shortedURL)
 	if err == nil {
 		http.Redirect(w, r, originalURL, http.StatusTemporaryRedirect)
 	} else {
+		fmt.Println(err)
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
