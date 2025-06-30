@@ -1,7 +1,9 @@
 package main
 
 import (
+	"fmt"
 	"github.com/delyke/urlShortener/internal/app"
+	"github.com/delyke/urlShortener/internal/config"
 	"github.com/delyke/urlShortener/internal/config/db"
 	"github.com/delyke/urlShortener/internal/handler"
 	"github.com/delyke/urlShortener/internal/repository"
@@ -14,6 +16,7 @@ import (
 
 func main() {
 	//repo := repository.NewMySQLRepository(db.Get())
+	config.ParseFlags()
 	repo := repository.NewLocalRepository()
 	if reflect.TypeOf(repo).String() == "*repository.MySQLRepository" {
 		err := godotenv.Load(".env")
@@ -25,7 +28,8 @@ func main() {
 	}
 	svc := service.NewURLService(repo)
 	h := handler.NewHandler(svc)
-	err := http.ListenAndServe(":8080", app.NewRouter(h))
+	fmt.Println("Running server on", config.FlagRunAddr)
+	err := http.ListenAndServe(config.FlagRunAddr, app.NewRouter(h))
 	if err != nil {
 		panic(err)
 	}

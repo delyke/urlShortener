@@ -2,6 +2,7 @@ package handler
 
 import (
 	"fmt"
+	"github.com/delyke/urlShortener/internal/config"
 	"github.com/delyke/urlShortener/internal/service"
 	"github.com/go-chi/chi/v5"
 	"io"
@@ -42,7 +43,7 @@ func (h *Handler) HandlePost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	shortedURL = "http://localhost:8080/" + shortedURL
+	shortedURL = fmt.Sprintf("http://%s/%s", config.FlagBaseAddr, shortedURL)
 	w.Header().Set("Content-Type", "text/plain")
 	w.WriteHeader(http.StatusCreated)
 	_, _ = w.Write([]byte(shortedURL))
