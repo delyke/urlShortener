@@ -3,6 +3,7 @@ package handler_test
 import (
 	"bytes"
 	"github.com/delyke/urlShortener/internal/app"
+	"github.com/delyke/urlShortener/internal/config"
 	"github.com/delyke/urlShortener/internal/handler"
 	"github.com/delyke/urlShortener/internal/repository"
 	"github.com/delyke/urlShortener/internal/service"
@@ -59,7 +60,11 @@ func TestHandler_HandleGet(t *testing.T) {
 
 			repo := repository.NewLocalRepository()
 			svc := service.NewURLService(repo)
-			h := handler.NewHandler(svc)
+			cfg := &config.Config{
+				RunAddr:  ":8080",
+				BaseAddr: "http://localhost:8080",
+			}
+			h := handler.NewHandler(svc, cfg)
 			r := app.NewRouter(h)
 
 			if tt.name == "Redirect to shorted Url" {

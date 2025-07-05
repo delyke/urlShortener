@@ -14,10 +14,11 @@ import (
 
 type Handler struct {
 	service ShortenURLService
+	config  *config.Config
 }
 
-func NewHandler(service ShortenURLService) *Handler {
-	return &Handler{service: service}
+func NewHandler(service ShortenURLService, cfg *config.Config) *Handler {
+	return &Handler{service: service, config: cfg}
 }
 
 func (h *Handler) HandlePost(w http.ResponseWriter, r *http.Request) {
@@ -46,8 +47,7 @@ func (h *Handler) HandlePost(w http.ResponseWriter, r *http.Request) {
 		log.Println(err)
 		return
 	}
-	cfg := config.GetConfig()
-	shortedURL, err = url.JoinPath(cfg.BaseAddr, shortedURL)
+	shortedURL, err = url.JoinPath(h.config.BaseAddr, shortedURL)
 
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)

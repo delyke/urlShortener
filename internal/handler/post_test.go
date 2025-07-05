@@ -2,6 +2,7 @@ package handler
 
 import (
 	"bytes"
+	"github.com/delyke/urlShortener/internal/config"
 	"github.com/delyke/urlShortener/internal/repository"
 	"github.com/delyke/urlShortener/internal/service"
 	"github.com/stretchr/testify/assert"
@@ -54,7 +55,11 @@ func TestHandler_HandlePost(t *testing.T) {
 
 			repo := repository.NewLocalRepository()
 			svc := service.NewURLService(repo)
-			h := NewHandler(svc)
+			cfg := &config.Config{
+				RunAddr:  ":8080",
+				BaseAddr: "http://localhost:8080",
+			}
+			h := NewHandler(svc, cfg)
 
 			hh := http.HandlerFunc(h.HandlePost)
 			hh(w, request)

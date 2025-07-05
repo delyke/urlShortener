@@ -14,7 +14,7 @@ func main() {
 	cfg := config.GetConfig()
 	repo := repository.NewLocalRepository()
 	svc := service.NewURLService(repo)
-	h := handler.NewHandler(svc)
+	h := handler.NewHandler(svc, cfg)
 	log.Println("Running server on", cfg.RunAddr)
 	err := http.ListenAndServe(cfg.RunAddr, app.NewRouter(h))
 	if err != nil {
