@@ -38,7 +38,7 @@ func (h *Handler) HandlePost(w http.ResponseWriter, r *http.Request) {
 
 	shortedURL, err := h.service.ShortenURL(originalURL)
 	if err != nil {
-		if errors.Is(err, service.ErrCanNotCreateUrl) {
+		if errors.Is(err, service.ErrCanNotCreateURL) {
 			log.Println("URL shortening error:", err)
 			w.WriteHeader(http.StatusInternalServerError)
 			return

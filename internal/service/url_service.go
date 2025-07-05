@@ -18,7 +18,7 @@ func NewURLService(repo repository.URLRepository) *URLService {
 }
 
 var ErrNotFound = errors.New("url not found")
-var ErrCanNotCreateUrl = errors.New("url cannot be created")
+var ErrCanNotCreateURL = errors.New("url cannot be created")
 
 func (s *URLService) ShortenURL(originalURL string) (string, error) {
 	var shortenURL string
@@ -33,7 +33,7 @@ func (s *URLService) ShortenURL(originalURL string) (string, error) {
 		}
 	}
 	if shortenURL == "" {
-		return "", ErrCanNotCreateUrl
+		return "", ErrCanNotCreateURL
 	}
 
 	err := s.repo.Save(originalURL, shortenURL)
