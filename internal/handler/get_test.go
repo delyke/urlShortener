@@ -31,7 +31,7 @@ func TestHandler_HandleGet(t *testing.T) {
 			request: `/`,
 			method:  http.MethodGet,
 			want: want{
-				code:        http.StatusBadRequest,
+				code:        http.StatusNotFound,
 				contentType: "",
 			},
 		},
@@ -40,7 +40,7 @@ func TestHandler_HandleGet(t *testing.T) {
 			request: `/she4894t`,
 			method:  http.MethodGet,
 			want: want{
-				code:        http.StatusBadRequest,
+				code:        http.StatusNotFound,
 				contentType: "",
 			},
 		},
@@ -69,10 +69,10 @@ func TestHandler_HandleGet(t *testing.T) {
 				postResult := wPost.Result()
 				body, _ := io.ReadAll(postResult.Body)
 				postResult.Body.Close()
-				tt.request = strings.TrimPrefix(string(body), "http://localhost:8080")
+				tt.request = strings.TrimPrefix(string(body), "http://localhost:8080/")
 			}
 			w := httptest.NewRecorder()
-			request := httptest.NewRequest(tt.method, tt.request, nil)
+			request := httptest.NewRequest(tt.method, "/"+tt.request, nil)
 			r.ServeHTTP(w, request)
 
 			result := w.Result()

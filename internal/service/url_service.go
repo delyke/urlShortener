@@ -4,8 +4,8 @@ import (
 	"crypto/rand"
 	"encoding/base64"
 	"errors"
-	"fmt"
 	"github.com/delyke/urlShortener/internal/repository"
+	"log"
 	"strings"
 )
 
@@ -17,15 +17,23 @@ func NewURLService(repo repository.URLRepository) *URLService {
 	return &URLService{repo: repo}
 }
 
-var errNotFound = errors.New("url not found")
+var ErrNotFound = errors.New("url not found")
+var ErrCanNotCreateUrl = errors.New("url cannot be created")
 
 func (s *URLService) ShortenURL(originalURL string) (string, error) {
-beginShortUrl:
-	shortenURL := generateShortenURL()
-	_, errExist := s.GetOriginalURL(shortenURL)
-
-	if errExist == nil {
-		goto beginShortUrl
+	var shortenURL string
+	for i := 0; i < 3; i++ {
+		shortenURL = generateShortenURL()
+		_, err := s.GetOriginalURL(shortenURL)
+		if err == nil {
+			shortenURL = ""
+			continue
+		} else {
+			break
+		}
+	}
+	if shortenURL == "" {
+		return "", ErrCanNotCreateUrl
 	}
 
 	err := s.repo.Save(originalURL, shortenURL)
@@ -36,10 +44,14 @@ beginShortUrl:
 }
 
 func (s *URLService) GetOriginalURL(shortenURL string) (string, error) {
-	fmt.Println("GetOriginalURL: ", shortenURL)
-	url, ok := s.repo.GetOriginalLink(shortenURL)
-	if !ok {
-		return "", errNotFound
+	log.Println("GetOriginalURL: ", shortenURL)
+	url, err := s.repo.GetOriginalLink(shortenURL)
+	if err != nil {
+		if errors.Is(err, repository.ErrorRecordNotFound) {
+			return "", ErrNotFound
+		} else {
+			return "", err
+		}
 	}
 	return url, nil
 }

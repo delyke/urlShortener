@@ -1,4 +1,4 @@
-package service
+package handler
 
 type ShortenURLService interface {
 	ShortenURL(originalURL string) (string, error)

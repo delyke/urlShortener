@@ -2,5 +2,5 @@ package repository
 
 type URLRepository interface {
 	Save(originalURL string, shortedURL string) error
-	GetOriginalLink(shortedURL string) (string, bool)
+	GetOriginalLink(shortedURL string) (string, error)
 }

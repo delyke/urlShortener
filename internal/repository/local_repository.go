@@ -1,6 +1,9 @@
 package repository
 
-import "sync"
+import (
+	"errors"
+	"sync"
+)
 
 type LocalRepository struct {
 	data map[string]string
@@ -20,9 +23,14 @@ func (repo *LocalRepository) Save(originalURL string, shortedURL string) error {
 	return nil
 }
 
-func (repo *LocalRepository) GetOriginalLink(shortedURL string) (string, bool) {
+var ErrorRecordNotFound = errors.New("record not found")
+
+func (repo *LocalRepository) GetOriginalLink(shortedURL string) (string, error) {
 	repo.mu.RLock()
 	defer repo.mu.RUnlock()
-	originalURL, ok := repo.data[shortedURL]
-	return originalURL, ok
+	originalURL, isSuccess := repo.data[shortedURL]
+	if !isSuccess {
+		return "", ErrorRecordNotFound
+	}
+	return originalURL, nil
 }

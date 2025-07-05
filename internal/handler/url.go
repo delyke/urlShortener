@@ -1,32 +1,31 @@
 package handler
 
 import (
+	"errors"
 	"fmt"
 	"github.com/delyke/urlShortener/internal/config"
 	"github.com/delyke/urlShortener/internal/service"
 	"github.com/go-chi/chi/v5"
 	"io"
+	"log"
 	"net/http"
+	"net/url"
 	"strings"
 )
 
 type Handler struct {
-	service service.ShortenURLService
+	service ShortenURLService
 }
 
-func NewHandler(service service.ShortenURLService) *Handler {
+func NewHandler(service ShortenURLService) *Handler {
 	return &Handler{service: service}
 }
 
 func (h *Handler) HandlePost(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		w.WriteHeader(http.StatusMethodNotAllowed)
-		return
-	}
-
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
+		w.WriteHeader(http.StatusInternalServerError)
+		log.Println(err)
 		return
 	}
 
@@ -39,14 +38,31 @@ func (h *Handler) HandlePost(w http.ResponseWriter, r *http.Request) {
 
 	shortedURL, err := h.service.ShortenURL(originalURL)
 	if err != nil {
+		if errors.Is(err, service.ErrCanNotCreateUrl) {
+			log.Println("URL shortening error:", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
 		w.WriteHeader(http.StatusInternalServerError)
+		log.Println(err)
 		return
 	}
+	fmt.Println(config.FlagBaseAddr, shortedURL)
+	shortedURL, err = url.JoinPath(config.FlagBaseAddr, shortedURL)
 
-	shortedURL = fmt.Sprintf("%s/%s", config.FlagBaseAddr, shortedURL)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		log.Println(err)
+		return
+	}
 	w.Header().Set("Content-Type", "text/plain")
 	w.WriteHeader(http.StatusCreated)
-	_, _ = w.Write([]byte(shortedURL))
+	_, err = w.Write([]byte(shortedURL))
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		log.Println(err)
+		return
+	}
 }
 
 func (h *Handler) HandleGet(w http.ResponseWriter, r *http.Request) {
@@ -61,8 +77,13 @@ func (h *Handler) HandleGet(w http.ResponseWriter, r *http.Request) {
 	if err == nil {
 		http.Redirect(w, r, originalURL, http.StatusTemporaryRedirect)
 	} else {
-		fmt.Println(err)
-		w.WriteHeader(http.StatusBadRequest)
-		return
+		if errors.Is(err, service.ErrNotFound) {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		} else {
+			w.WriteHeader(http.StatusInternalServerError)
+			log.Println(err)
+			return
+		}
 	}
 }
