@@ -11,12 +11,12 @@ import (
 )
 
 func main() {
-	config.GetConfig()
+	cfg := config.GetConfig()
 	repo := repository.NewLocalRepository()
 	svc := service.NewURLService(repo)
 	h := handler.NewHandler(svc)
-	log.Println("Running server on", config.FlagRunAddr)
-	err := http.ListenAndServe(config.FlagRunAddr, app.NewRouter(h))
+	log.Println("Running server on", cfg.RunAddr)
+	err := http.ListenAndServe(cfg.RunAddr, app.NewRouter(h))
 	if err != nil {
 		log.Fatal(err)
 	}

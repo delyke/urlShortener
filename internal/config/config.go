@@ -2,11 +2,18 @@ package config
 
 import "flag"
 
-var FlagRunAddr string
-var FlagBaseAddr string
+type Config struct {
+	RunAddr  string
+	BaseAddr string
+}
 
-func GetConfig() {
-	flag.StringVar(&FlagRunAddr, "a", ":8080", "Run server address")
-	flag.StringVar(&FlagBaseAddr, "b", "http://localhost:8080", "Base server address")
+func GetConfig() *Config {
+	runAddr := flag.String("a", ":8080", "Run server address")
+	baseAddr := flag.String("b", "http://localhost:8080", "Base server address")
 	flag.Parse()
+
+	return &Config{
+		RunAddr:  *runAddr,
+		BaseAddr: *baseAddr,
+	}
 }

@@ -2,7 +2,6 @@ package handler
 
 import (
 	"errors"
-	"fmt"
 	"github.com/delyke/urlShortener/internal/config"
 	"github.com/delyke/urlShortener/internal/service"
 	"github.com/go-chi/chi/v5"
@@ -47,8 +46,8 @@ func (h *Handler) HandlePost(w http.ResponseWriter, r *http.Request) {
 		log.Println(err)
 		return
 	}
-	fmt.Println(config.FlagBaseAddr, shortedURL)
-	shortedURL, err = url.JoinPath(config.FlagBaseAddr, shortedURL)
+	cfg := config.GetConfig()
+	shortedURL, err = url.JoinPath(cfg.BaseAddr, shortedURL)
 
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
