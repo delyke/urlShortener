@@ -25,7 +25,7 @@ func (h *Handler) HandlePost(w http.ResponseWriter, r *http.Request) {
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		log.Println(err)
+		log.Printf("failed to read the request body: %v", err)
 		return
 	}
 

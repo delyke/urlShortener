@@ -2,17 +2,19 @@ package repository
 
 import (
 	"errors"
+	"fmt"
 	"sync"
 )
 
 type LocalRepository struct {
 	data map[string]string
-	mu   sync.RWMutex
+	mu   *sync.Mutex
 }
 
 func NewLocalRepository() *LocalRepository {
 	return &LocalRepository{
 		data: make(map[string]string),
+		mu:   &sync.Mutex{},
 	}
 }
 
@@ -23,14 +25,14 @@ func (repo *LocalRepository) Save(originalURL string, shortedURL string) error {
 	return nil
 }
 
-var ErrorRecordNotFound = errors.New("record not found")
+var ErrRecordNotFound = errors.New("record not found")
 
 func (repo *LocalRepository) GetOriginalLink(shortedURL string) (string, error) {
-	repo.mu.RLock()
-	defer repo.mu.RUnlock()
+	repo.mu.Lock()
+	defer repo.mu.Unlock()
 	originalURL, isSuccess := repo.data[shortedURL]
 	if !isSuccess {
-		return "", ErrorRecordNotFound
+		return "", fmt.Errorf("%w: %s", ErrRecordNotFound, shortedURL)
 	}
 	return originalURL, nil
 }

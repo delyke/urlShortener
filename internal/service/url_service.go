@@ -47,7 +47,7 @@ func (s *URLService) GetOriginalURL(shortenURL string) (string, error) {
 	log.Println("GetOriginalURL: ", shortenURL)
 	url, err := s.repo.GetOriginalLink(shortenURL)
 	if err != nil {
-		if errors.Is(err, repository.ErrorRecordNotFound) {
+		if errors.Is(err, repository.ErrRecordNotFound) {
 			return "", ErrNotFound
 		} else {
 			return "", err
