@@ -1,10 +1,14 @@
 package config
 
-import "flag"
+import (
+	"flag"
+	"github.com/caarlos0/env/v6"
+	"log"
+)
 
 type Config struct {
-	RunAddr  string
-	BaseAddr string
+	RunAddr  string `env:"SERVER_ADDRESS"`
+	BaseAddr string `env:"BASE_URL"`
 }
 
 func GetConfig() *Config {
@@ -12,8 +16,19 @@ func GetConfig() *Config {
 	baseAddr := flag.String("b", "http://localhost:8080", "Base server address")
 	flag.Parse()
 
-	return &Config{
-		RunAddr:  *runAddr,
-		BaseAddr: *baseAddr,
+	var cfg Config
+	err := env.Parse(&cfg)
+	if err != nil {
+		log.Fatal(err)
 	}
+
+	if cfg.RunAddr == "" {
+		cfg.RunAddr = *runAddr
+	}
+
+	if cfg.BaseAddr == "" {
+		cfg.BaseAddr = *baseAddr
+	}
+
+	return &cfg
 }
