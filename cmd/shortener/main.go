@@ -4,6 +4,7 @@ import (
 	"github.com/delyke/urlShortener/internal/app"
 	"github.com/delyke/urlShortener/internal/config"
 	"github.com/delyke/urlShortener/internal/handler"
+	"github.com/delyke/urlShortener/internal/logger"
 	"github.com/delyke/urlShortener/internal/repository"
 	"github.com/delyke/urlShortener/internal/service"
 	"log"
@@ -16,8 +17,13 @@ func main() {
 	svc := service.NewURLService(repo)
 	h := handler.NewHandler(svc, cfg)
 	log.Println("Running server on", cfg.RunAddr)
-	err := http.ListenAndServe(cfg.RunAddr, app.NewRouter(h))
+	l, err := logger.Initialize(cfg.LogLevel)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal("Failed to initialize logger:", err)
+	}
+	defer l.Sync()
+	err = http.ListenAndServe(cfg.RunAddr, app.NewRouter(h, l))
+	if err != nil {
+		log.Fatal("Failed listen and serve:", err)
 	}
 }

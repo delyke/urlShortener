@@ -5,10 +5,12 @@ import (
 	"github.com/delyke/urlShortener/internal/app"
 	"github.com/delyke/urlShortener/internal/config"
 	"github.com/delyke/urlShortener/internal/handler"
+	"github.com/delyke/urlShortener/internal/logger"
 	"github.com/delyke/urlShortener/internal/repository"
 	"github.com/delyke/urlShortener/internal/service"
 	"github.com/stretchr/testify/assert"
 	"io"
+	"log"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -63,9 +65,15 @@ func TestHandler_HandleGet(t *testing.T) {
 			cfg := &config.Config{
 				RunAddr:  ":8080",
 				BaseAddr: "http://localhost:8080",
+				LogLevel: "debug",
 			}
 			h := handler.NewHandler(svc, cfg)
-			r := app.NewRouter(h)
+
+			l, err := logger.Initialize(cfg.LogLevel)
+			if err != nil {
+				log.Fatal("Failed to initialize logger:", err)
+			}
+			r := app.NewRouter(h, l)
 
 			if tt.name == "Redirect to shorted Url" {
 				wPost := httptest.NewRecorder()
