@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"encoding/json"
 	"errors"
 	"github.com/delyke/urlShortener/internal/config"
 	"github.com/delyke/urlShortener/internal/service"
@@ -84,5 +85,69 @@ func (h *Handler) HandleGet(w http.ResponseWriter, r *http.Request) {
 			log.Println(err)
 			return
 		}
+	}
+}
+
+type ShortenURLRequest struct {
+	URL string `json:"url"`
+}
+
+type ShortenURLResponse struct {
+	Result string `json:"result"`
+}
+
+func (h *Handler) HandleApiShorten(w http.ResponseWriter, r *http.Request) {
+	if r.Header.Get("Content-Type") != "application/json" {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		log.Printf("failed to read the request body: %v", err)
+		return
+	}
+	var request ShortenURLRequest
+	err = json.Unmarshal(body, &request)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		log.Printf("failed to unmarshal the request body: %v", err)
+		return
+	}
+
+	if request.URL == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		log.Printf("URL cannot be empty.")
+		return
+	}
+
+	shortenURL, err := h.service.ShortenURL(request.URL)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		log.Printf("failed to short url: %f", err)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+
+	shortedURL, err := url.JoinPath(h.config.BaseAddr, shortenURL)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		log.Println(err)
+		return
+	}
+
+	b, err := json.Marshal(ShortenURLResponse{Result: shortedURL})
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		log.Println(err)
+		return
+	}
+	_, err = w.Write(b)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		log.Println(err)
+		return
 	}
 }

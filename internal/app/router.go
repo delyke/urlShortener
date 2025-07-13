@@ -12,6 +12,7 @@ func NewRouter(h *handler.Handler, l *logger.Logger) chi.Router {
 		r.With(l.RequestLogger).Post("/", h.HandlePost)
 		r.With(l.RequestLogger).Get("/", h.HandleGet)
 		r.With(l.RequestLogger).Get("/{shortURL}", h.HandleGet)
+		r.With(l.RequestLogger).Post("/api/shorten", h.HandleApiShorten)
 	})
 	return r
 }
