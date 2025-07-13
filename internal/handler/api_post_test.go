@@ -86,7 +86,7 @@ func TestHandler_HandleApiShorten(t *testing.T) {
 			}
 			h := NewHandler(svc, cfg)
 
-			hh := http.HandlerFunc(h.HandleApiShorten)
+			hh := http.HandlerFunc(h.HandleAPIShorten)
 			hh(w, request)
 
 			result := w.Result()

@@ -96,7 +96,7 @@ type ShortenURLResponse struct {
 	Result string `json:"result"`
 }
 
-func (h *Handler) HandleApiShorten(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) HandleAPIShorten(w http.ResponseWriter, r *http.Request) {
 	if r.Header.Get("Content-Type") != "application/json" {
 		w.WriteHeader(http.StatusBadRequest)
 		return
