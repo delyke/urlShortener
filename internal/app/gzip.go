@@ -7,8 +7,9 @@ import (
 )
 
 type compressWriter struct {
-	w  http.ResponseWriter
-	zw *gzip.Writer
+	w             http.ResponseWriter
+	zw            *gzip.Writer
+	headerWritten bool
 }
 
 func newCompressWriter(w http.ResponseWriter) *compressWriter {
@@ -27,6 +28,10 @@ func (c *compressWriter) Write(b []byte) (int, error) {
 }
 
 func (c *compressWriter) WriteHeader(statusCode int) {
+	if c.headerWritten {
+		return
+	}
+	c.headerWritten = true
 	if (statusCode >= 200 && statusCode < 300) || statusCode >= 400 {
 		c.w.Header().Set("Content-Encoding", "gzip")
 	}
