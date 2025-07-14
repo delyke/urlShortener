@@ -33,7 +33,7 @@ func TestHandler_HandleApiShorten(t *testing.T) {
 			request:     "/api/shorten",
 			want: want{
 				code:        http.StatusBadRequest,
-				contentType: "",
+				contentType: "application/json",
 			},
 		},
 		{
@@ -44,7 +44,7 @@ func TestHandler_HandleApiShorten(t *testing.T) {
 			request:     "/api/shorten",
 			want: want{
 				code:        http.StatusBadRequest,
-				contentType: "",
+				contentType: "application/json",
 			},
 		},
 		{
@@ -55,7 +55,7 @@ func TestHandler_HandleApiShorten(t *testing.T) {
 			request:     "/api/shorten",
 			want: want{
 				code:        http.StatusBadRequest,
-				contentType: "",
+				contentType: "application/json",
 			},
 		},
 		{

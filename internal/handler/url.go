@@ -92,61 +92,122 @@ type ShortenURLRequest struct {
 	URL string `json:"url"`
 }
 
-type ShortenURLResponse struct {
+type ShortenURLSuccessResponse struct {
 	Result string `json:"result"`
 }
 
+type ShortenURLErrorResponse struct {
+	Error string `json:"error"`
+}
+
 func (h *Handler) HandleAPIShorten(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
 	if r.Header.Get("Content-Type") != "application/json" {
+		b, err := json.Marshal(ShortenURLErrorResponse{Error: "Content-Type must be application/json"})
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			log.Println(err)
+			return
+		}
 		w.WriteHeader(http.StatusBadRequest)
+		_, err = w.Write(b)
 		return
 	}
 
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
+		b, err := json.Marshal(ShortenURLErrorResponse{Error: "Internal Server Error #0"})
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			log.Println(err)
+			return
+		}
 		w.WriteHeader(http.StatusInternalServerError)
+		_, err = w.Write(b)
 		log.Printf("failed to read the request body: %v", err)
 		return
 	}
 	var request ShortenURLRequest
 	err = json.Unmarshal(body, &request)
 	if err != nil {
+		b, err := json.Marshal(ShortenURLErrorResponse{Error: "JSON parse error"})
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			log.Println(err)
+			return
+		}
 		w.WriteHeader(http.StatusBadRequest)
+		_, err = w.Write(b)
 		log.Printf("failed to unmarshal the request body: %v", err)
 		return
 	}
 
 	if request.URL == "" {
+		b, err := json.Marshal(ShortenURLErrorResponse{Error: "URL can't be empty"})
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			log.Println(err)
+			return
+		}
 		w.WriteHeader(http.StatusBadRequest)
+		_, err = w.Write(b)
 		log.Printf("URL cannot be empty.")
 		return
 	}
 
 	shortenURL, err := h.service.ShortenURL(request.URL)
 	if err != nil {
+		b, err := json.Marshal(ShortenURLErrorResponse{Error: "Failed to shorten URL"})
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			log.Println(err)
+			return
+		}
 		w.WriteHeader(http.StatusInternalServerError)
+		_, err = w.Write(b)
 		log.Printf("failed to short url: %f", err)
 		return
 	}
-	w.Header().Set("Content-Type", "application/json")
+
 	w.WriteHeader(http.StatusCreated)
 
 	shortedURL, err := url.JoinPath(h.config.BaseAddr, shortenURL)
 	if err != nil {
+		b, err := json.Marshal(ShortenURLErrorResponse{Error: "Inertal Server Error #1"})
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			log.Println(err)
+			return
+		}
 		w.WriteHeader(http.StatusInternalServerError)
+		_, err = w.Write(b)
 		log.Println(err)
 		return
 	}
 
-	b, err := json.Marshal(ShortenURLResponse{Result: shortedURL})
+	b, err := json.Marshal(ShortenURLSuccessResponse{Result: shortedURL})
 	if err != nil {
+		b, err := json.Marshal(ShortenURLErrorResponse{Error: "Inertal Server Error #2"})
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			log.Println(err)
+			return
+		}
 		w.WriteHeader(http.StatusInternalServerError)
+		_, err = w.Write(b)
 		log.Println(err)
 		return
 	}
 	_, err = w.Write(b)
 	if err != nil {
+		b, err := json.Marshal(ShortenURLErrorResponse{Error: "Inertal Server Error #3"})
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			log.Println(err)
+			return
+		}
 		w.WriteHeader(http.StatusInternalServerError)
+		_, err = w.Write(b)
 		log.Println(err)
 		return
 	}
