@@ -111,6 +111,11 @@ func (h *Handler) HandleAPIShorten(w http.ResponseWriter, r *http.Request) {
 		}
 		w.WriteHeader(http.StatusBadRequest)
 		_, err = w.Write(b)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			log.Println(err)
+			return
+		}
 		return
 	}
 
@@ -151,6 +156,11 @@ func (h *Handler) HandleAPIShorten(w http.ResponseWriter, r *http.Request) {
 		}
 		w.WriteHeader(http.StatusBadRequest)
 		_, err = w.Write(b)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			log.Println(err)
+			return
+		}
 		log.Printf("URL cannot be empty.")
 		return
 	}

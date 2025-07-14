@@ -27,9 +27,7 @@ func (c *compressWriter) Write(b []byte) (int, error) {
 }
 
 func (c *compressWriter) WriteHeader(statusCode int) {
-	if statusCode != http.StatusTemporaryRedirect &&
-		statusCode != http.StatusPermanentRedirect &&
-		statusCode != http.StatusMovedPermanently {
+	if (statusCode >= 200 && statusCode < 300) || statusCode >= 400 {
 		c.w.Header().Set("Content-Encoding", "gzip")
 	}
 	c.w.WriteHeader(statusCode)
