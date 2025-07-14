@@ -1,45 +1,55 @@
 package app
 
 import (
+	"bytes"
 	"compress/gzip"
 	"io"
 	"net/http"
 )
 
 type compressWriter struct {
-	w             http.ResponseWriter
-	zw            *gzip.Writer
-	headerWritten bool
+	http.ResponseWriter
+	buf     bytes.Buffer
+	gzw     *gzip.Writer
+	written bool
+	status  int
 }
 
 func newCompressWriter(w http.ResponseWriter) *compressWriter {
 	return &compressWriter{
-		w:  w,
-		zw: gzip.NewWriter(w),
+		ResponseWriter: w,
 	}
 }
 
 func (c *compressWriter) Header() http.Header {
-	return c.w.Header()
+	return c.ResponseWriter.Header()
 }
 
-func (c *compressWriter) Write(b []byte) (int, error) {
-	return c.zw.Write(b)
+func (c *compressWriter) Write(data []byte) (int, error) {
+	if !c.written {
+		c.written = true
+
+		if c.status == http.StatusTemporaryRedirect || c.status == http.StatusMovedPermanently {
+			c.ResponseWriter.WriteHeader(c.status)
+			return c.ResponseWriter.Write(data)
+		}
+
+		c.ResponseWriter.Header().Set("Content-Encoding", "gzip")
+		c.ResponseWriter.WriteHeader(c.status)
+		c.gzw = gzip.NewWriter(c.ResponseWriter)
+	}
+	return c.gzw.Write(data)
 }
 
 func (c *compressWriter) WriteHeader(statusCode int) {
-	if c.headerWritten {
-		return
-	}
-	c.headerWritten = true
-	if (statusCode >= 200 && statusCode < 300) || statusCode >= 400 {
-		c.w.Header().Set("Content-Encoding", "gzip")
-	}
-	c.w.WriteHeader(statusCode)
+	c.status = statusCode
 }
 
 func (c *compressWriter) Close() error {
-	return c.zw.Close()
+	if c.gzw != nil {
+		return c.gzw.Close()
+	}
+	return nil
 }
 
 type compressReader struct {

@@ -20,33 +20,28 @@ func NewRouter(h *handler.Handler, l *logger.Logger) chi.Router {
 	return r
 }
 
-func gzipMiddleware(h http.Handler) http.Handler {
+func gzipMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		ow := w
-
-		acceptEncoding := r.Header.Get("Accept-Encoding")
-		supportsGZIP := strings.Contains(acceptEncoding, "gzip")
-
-		contentType := r.Header.Get("Content-Type")
-		contentTypeAcceptEncoding := strings.Contains(contentType, "application/json") ||
-			strings.Contains(contentType, "text/html")
-		if supportsGZIP && contentTypeAcceptEncoding {
-			cw := newCompressWriter(w)
-			ow = cw
-			defer cw.Close()
-		}
-
-		contentEncoding := r.Header.Get("Content-Encoding")
-		sendsGZIP := strings.Contains(contentEncoding, "gzip")
-		if sendsGZIP && contentTypeAcceptEncoding {
+		isPerfectContentType := strings.Contains(r.Header.Get("Content-Type"), "application/json") ||
+			strings.Contains(r.Header.Get("Content-Type"), "text/html")
+		if strings.Contains(r.Header.Get("Content-Encoding"), "gzip") && isPerfectContentType {
 			cr, err := newCompressReader(r.Body)
 			if err != nil {
-				w.WriteHeader(http.StatusInternalServerError)
+				http.Error(w, "failed to decompress request", http.StatusInternalServerError)
 				return
 			}
+			defer cr.Close()
 			r.Body = cr
-			defer r.Body.Close()
 		}
-		h.ServeHTTP(ow, r)
+
+		if !strings.Contains(r.Header.Get("Accept-Encoding"), "gzip") || !isPerfectContentType {
+			next.ServeHTTP(w, r)
+			return
+		}
+
+		gzw := newCompressWriter(w)
+		defer gzw.Close()
+
+		next.ServeHTTP(gzw, r)
 	})
 }
