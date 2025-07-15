@@ -78,8 +78,8 @@ func TestGzipExpand(t *testing.T) {
 	getReq := httptest.NewRequest(http.MethodGet, "/"+shortKey, nil)
 	getReq.Header.Set("Accept-Encoding", "gzip")
 	wGet := httptest.NewRecorder()
-	router.ServeHTTP(wGet, getReq)
 
+	router.ServeHTTP(wGet, getReq)
 	getRes := wGet.Result()
 	defer getRes.Body.Close()
 

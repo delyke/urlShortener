@@ -66,16 +66,11 @@ func (h *Handler) HandlePost(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) HandleGet(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		w.WriteHeader(http.StatusMethodNotAllowed)
-		return
-	}
-
 	shortedURL := chi.URLParam(r, "shortURL")
-
 	originalURL, err := h.service.GetOriginalURL(shortedURL)
 	if err == nil {
 		http.Redirect(w, r, originalURL, http.StatusTemporaryRedirect)
+		return
 	} else {
 		if errors.Is(err, service.ErrNotFound) {
 			w.WriteHeader(http.StatusNotFound)
