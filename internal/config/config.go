@@ -7,15 +7,17 @@ import (
 )
 
 type Config struct {
-	RunAddr  string `env:"SERVER_ADDRESS"`
-	BaseAddr string `env:"BASE_URL"`
-	LogLevel string `env:"LOG_LEVEL"`
+	RunAddr         string `env:"SERVER_ADDRESS"`
+	BaseAddr        string `env:"BASE_URL"`
+	LogLevel        string `env:"LOG_LEVEL"`
+	FileStoragePath string `env:"FILE_STORAGE_PATH"`
 }
 
 func GetConfig() *Config {
 	runAddr := flag.String("a", ":8080", "Run server address")
 	baseAddr := flag.String("b", "http://localhost:8080", "Base server address")
 	logLevel := flag.String("l", "info", "Log level")
+	fileStoragePath := flag.String("f", "storage.json", "File storage path")
 
 	flag.Parse()
 
@@ -35,6 +37,10 @@ func GetConfig() *Config {
 
 	if cfg.LogLevel == "" {
 		cfg.LogLevel = *logLevel
+	}
+
+	if cfg.FileStoragePath == "" {
+		cfg.FileStoragePath = *fileStoragePath
 	}
 
 	return &cfg

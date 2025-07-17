@@ -162,6 +162,7 @@ func (h *Handler) HandleAPIShorten(w http.ResponseWriter, r *http.Request) {
 
 	shortenURL, err := h.service.ShortenURL(request.URL)
 	if err != nil {
+		log.Printf("shorten url error: %v", err)
 		b, err := json.Marshal(ShortenURLErrorResponse{Error: "Failed to shorten URL"})
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
@@ -170,7 +171,7 @@ func (h *Handler) HandleAPIShorten(w http.ResponseWriter, r *http.Request) {
 		}
 		w.WriteHeader(http.StatusInternalServerError)
 		_, err = w.Write(b)
-		log.Printf("failed to short url: %f", err)
+		log.Printf("failed to short url: %v", err)
 		return
 	}
 

@@ -52,13 +52,15 @@ func TestHandler_HandlePost(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			request := httptest.NewRequest(tt.method, tt.request, bytes.NewReader(tt.body))
 			w := httptest.NewRecorder()
-
-			repo := repository.NewLocalRepository()
-			svc := service.NewURLService(repo)
 			cfg := &config.Config{
-				RunAddr:  ":8080",
-				BaseAddr: "http://localhost:8080",
+				RunAddr:         ":8080",
+				BaseAddr:        "http://localhost:8080",
+				LogLevel:        "debug",
+				FileStoragePath: "/storage.json",
 			}
+
+			repo := repository.NewFileRepository(cfg.FileStoragePath)
+			svc := service.NewURLService(repo)
 			h := NewHandler(svc, cfg)
 
 			hh := http.HandlerFunc(h.HandlePost)

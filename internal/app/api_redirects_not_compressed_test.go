@@ -19,13 +19,14 @@ import (
 )
 
 func TestGzipExpand(t *testing.T) {
-	repo := repository.NewLocalRepository()
-	svc := service.NewURLService(repo)
 	cfg := &config.Config{
-		RunAddr:  ":8080",
-		BaseAddr: "http://localhost:8080",
-		LogLevel: "debug",
+		RunAddr:         ":8080",
+		BaseAddr:        "http://localhost:8080",
+		LogLevel:        "debug",
+		FileStoragePath: "/storage.json",
 	}
+	repo := repository.NewFileRepository(cfg.FileStoragePath)
+	svc := service.NewURLService(repo)
 	h := handler.NewHandler(svc, cfg)
 	l, err := logger.Initialize(cfg.LogLevel)
 	require.NoError(t, err)

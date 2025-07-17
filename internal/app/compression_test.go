@@ -104,13 +104,14 @@ func TestCompression(t *testing.T) {
 			request.Header.Set("Accept-Encoding", "gzip")
 			request.Header.Set("Content-Type", tt.contentType)
 			w := httptest.NewRecorder()
-			repo := repository.NewLocalRepository()
-			svc := service.NewURLService(repo)
 			cfg := &config.Config{
-				RunAddr:  ":8080",
-				BaseAddr: "http://localhost:8080",
-				LogLevel: "debug",
+				RunAddr:         ":8080",
+				BaseAddr:        "http://localhost:8080",
+				LogLevel:        "debug",
+				FileStoragePath: "storage.json",
 			}
+			repo := repository.NewFileRepository(cfg.FileStoragePath)
+			svc := service.NewURLService(repo)
 			h := handler.NewHandler(svc, cfg)
 			l, err := logger.Initialize(cfg.LogLevel)
 			if err != nil {

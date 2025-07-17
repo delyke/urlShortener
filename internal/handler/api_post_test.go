@@ -76,14 +76,15 @@ func TestHandler_HandleApiShorten(t *testing.T) {
 			request := httptest.NewRequest(tt.method, tt.request, bytes.NewReader(tt.body))
 			request.Header.Set("Content-Type", tt.contentType)
 			w := httptest.NewRecorder()
-
-			repo := repository.NewLocalRepository()
-			svc := service.NewURLService(repo)
 			cfg := &config.Config{
-				RunAddr:  ":8080",
-				BaseAddr: "http://localhost:8080",
-				LogLevel: "debug",
+				RunAddr:         ":8080",
+				BaseAddr:        "http://localhost:8080",
+				LogLevel:        "debug",
+				FileStoragePath: "/storage.json",
 			}
+			repo := repository.NewFileRepository(cfg.FileStoragePath)
+			svc := service.NewURLService(repo)
+
 			h := NewHandler(svc, cfg)
 
 			hh := http.HandlerFunc(h.HandleAPIShorten)

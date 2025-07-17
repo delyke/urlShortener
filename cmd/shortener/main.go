@@ -13,7 +13,7 @@ import (
 
 func main() {
 	cfg := config.GetConfig()
-	repo := repository.NewLocalRepository()
+	repo := repository.NewFileRepository(cfg.FileStoragePath)
 	svc := service.NewURLService(repo)
 	h := handler.NewHandler(svc, cfg)
 	log.Println("Running server on", cfg.RunAddr)
