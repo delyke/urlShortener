@@ -3,7 +3,6 @@ package config
 import (
 	"flag"
 	"github.com/caarlos0/env/v6"
-	"log"
 )
 
 type Config struct {
@@ -13,7 +12,7 @@ type Config struct {
 	FileStoragePath string `env:"FILE_STORAGE_PATH"`
 }
 
-func GetConfig() *Config {
+func GetConfig() (*Config, error) {
 	runAddr := flag.String("a", ":8080", "Run server address")
 	baseAddr := flag.String("b", "http://localhost:8080", "Base server address")
 	logLevel := flag.String("l", "info", "Log level")
@@ -24,7 +23,8 @@ func GetConfig() *Config {
 	var cfg Config
 	err := env.Parse(&cfg)
 	if err != nil {
-		log.Fatal(err)
+
+		return nil, err
 	}
 
 	if cfg.RunAddr == "" {
@@ -43,5 +43,5 @@ func GetConfig() *Config {
 		cfg.FileStoragePath = *fileStoragePath
 	}
 
-	return &cfg
+	return &cfg, nil
 }

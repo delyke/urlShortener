@@ -82,7 +82,11 @@ func TestHandler_HandleApiShorten(t *testing.T) {
 				LogLevel:        "debug",
 				FileStoragePath: "/storage.json",
 			}
-			repo := repository.NewFileRepository(cfg.FileStoragePath)
+			repo, err := repository.NewFileRepository(cfg.FileStoragePath)
+			if err != nil {
+				t.Errorf("Failed to initialize repo: %v", err)
+				return
+			}
 			svc := service.NewURLService(repo)
 
 			h := NewHandler(svc, cfg)

@@ -12,8 +12,14 @@ import (
 )
 
 func main() {
-	cfg := config.GetConfig()
-	repo := repository.NewFileRepository(cfg.FileStoragePath)
+	cfg, err := config.GetConfig()
+	if err != nil {
+		log.Fatal("Failed to initialize config: ", err)
+	}
+	repo, err := repository.NewFileRepository(cfg.FileStoragePath)
+	if err != nil {
+		log.Fatal("Failed to initialize repo: ", err)
+	}
 	svc := service.NewURLService(repo)
 	h := handler.NewHandler(svc, cfg)
 	log.Println("Running server on", cfg.RunAddr)

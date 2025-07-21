@@ -11,12 +11,26 @@ import (
 
 type FileRepository struct {
 	filename string
+	urls     []model.URL
 }
 
-func NewFileRepository(filename string) *FileRepository {
+func NewFileRepository(filename string) (*FileRepository, error) {
+	var urls []model.URL
+	consumer, err := newConsumer(filename)
+	if err != nil {
+		return nil, err
+	}
+	if err := consumer.decoder.Decode(&urls); err != nil {
+		if err != io.EOF {
+			log.Printf("Error reading from file: %v", err)
+			return nil, err
+		}
+	}
+	defer consumer.file.Close()
 	return &FileRepository{
 		filename: filename,
-	}
+		urls:     urls,
+	}, nil
 }
 
 type Producer struct {
@@ -64,27 +78,18 @@ func (repo *FileRepository) Save(originalURL string, shortedURL string) error {
 		return err
 	}
 
-	urls, err := repo.getAllRecords()
-	if err != nil {
-		return err
-	}
-
 	url := model.URL{
 		UUID:        UUID,
 		OriginalURL: originalURL,
 		ShortURL:    shortedURL,
 	}
-	urls = append(urls, url)
+	repo.urls = append(repo.urls, url)
 	producer.encoder.SetIndent("", "\t")
-	return producer.encoder.Encode(urls)
+	return producer.encoder.Encode(repo.urls)
 }
 
 func (repo *FileRepository) GetOriginalLink(shortedURL string) (string, error) {
-	urls, err := repo.getAllRecords()
-	if err != nil {
-		return "", err
-	}
-	for _, url := range urls {
+	for _, url := range repo.urls {
 		if url.ShortURL == shortedURL {
 			return url.OriginalURL, nil
 		}
@@ -92,28 +97,6 @@ func (repo *FileRepository) GetOriginalLink(shortedURL string) (string, error) {
 	return "", ErrRecordNotFound
 }
 
-func (repo *FileRepository) getAllRecords() ([]model.URL, error) {
-	var urls []model.URL
-	consumer, err := newConsumer(repo.filename)
-	if err != nil {
-		return urls, err
-	}
-	if err := consumer.decoder.Decode(&urls); err != nil {
-		if err == io.EOF {
-			log.Println("EOF")
-			return urls, nil
-		}
-		log.Printf("Error reading from file: %v", err)
-		return nil, err
-	}
-	defer consumer.file.Close()
-	return urls, nil
-}
-
 func (repo *FileRepository) generateUUID() (string, error) {
-	urls, err := repo.getAllRecords()
-	if err != nil {
-		return "", err
-	}
-	return fmt.Sprintf("%d", len(urls)+1), nil
+	return fmt.Sprintf("%d", len(repo.urls)+1), nil
 }

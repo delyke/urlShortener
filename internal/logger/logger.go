@@ -8,7 +8,6 @@ import (
 
 type Logger struct {
 	*zap.SugaredLogger
-	zapLogger *zap.Logger
 }
 
 func Initialize(level string) (*Logger, error) {
@@ -25,7 +24,7 @@ func Initialize(level string) (*Logger, error) {
 		return nil, err
 	}
 
-	return &Logger{zl.Sugar(), zl}, nil
+	return &Logger{zl.Sugar()}, nil
 }
 
 type (
@@ -77,5 +76,5 @@ func (l *Logger) RequestLogger(h http.Handler) http.Handler {
 }
 
 func (l *Logger) Sync() error {
-	return l.zapLogger.Sync()
+	return l.Sync()
 }

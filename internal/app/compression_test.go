@@ -10,7 +10,6 @@ import (
 	"github.com/delyke/urlShortener/internal/service"
 	"github.com/stretchr/testify/require"
 	"io"
-	"log"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -110,12 +109,17 @@ func TestCompression(t *testing.T) {
 				LogLevel:        "debug",
 				FileStoragePath: "storage.json",
 			}
-			repo := repository.NewFileRepository(cfg.FileStoragePath)
+			repo, err := repository.NewFileRepository(cfg.FileStoragePath)
+			if err != nil {
+				t.Error("Failed to initialize repo: ", err)
+				return
+			}
 			svc := service.NewURLService(repo)
 			h := handler.NewHandler(svc, cfg)
 			l, err := logger.Initialize(cfg.LogLevel)
 			if err != nil {
-				log.Fatal("Failed to initialize logger:", err)
+				t.Errorf("Failed to initialize logger: %v", err)
+				return
 			}
 			r := NewRouter(h, l)
 			r.ServeHTTP(w, request)

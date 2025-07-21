@@ -42,7 +42,7 @@ func gzipMiddleware(next http.Handler) http.Handler {
 				_, err = w.Write(b)
 				if err != nil {
 					w.WriteHeader(http.StatusInternalServerError)
-					log.Println(err)
+					log.Println("Ошибка возврата данных: ", err)
 					return
 				}
 			}
