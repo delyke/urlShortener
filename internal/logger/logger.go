@@ -74,7 +74,3 @@ func (l *Logger) RequestLogger(h http.Handler) http.Handler {
 		)
 	})
 }
-
-func (l *Logger) Sync() error {
-	return l.Sync()
-}
