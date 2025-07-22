@@ -1,9 +1,7 @@
 package model
 
-import "gorm.io/gorm"
-
 type URL struct {
-	gorm.Model
-	OriginalURL string `json:"url"`
-	ShortedURL  string `json:"shorted_url" gorm:"unique"`
+	UUID        string `json:"uuid"`
+	OriginalURL string `json:"original_url"`
+	ShortURL    string `json:"short_url"`
 }
