@@ -6,8 +6,9 @@ import (
 	"github.com/delyke/urlShortener/internal/config"
 	"github.com/delyke/urlShortener/internal/handler"
 	"github.com/delyke/urlShortener/internal/logger"
-	"github.com/delyke/urlShortener/internal/repository"
+	"github.com/delyke/urlShortener/internal/mocks"
 	"github.com/delyke/urlShortener/internal/service"
+	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 	"io"
 	"net/http"
@@ -109,11 +110,12 @@ func TestCompression(t *testing.T) {
 				LogLevel:        "debug",
 				FileStoragePath: "storage.json",
 			}
-			repo, err := repository.NewFileRepository(cfg.FileStoragePath)
-			if err != nil {
-				t.Error("Failed to initialize repo: ", err)
-				return
-			}
+
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			repo := mocks.NewMockURLRepository(ctrl)
+
 			svc := service.NewURLService(repo)
 			h := handler.NewHandler(svc, cfg)
 			l, err := logger.Initialize(cfg.LogLevel)

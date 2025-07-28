@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"database/sql"
+	"errors"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"time"
 )
@@ -20,11 +21,29 @@ func NewPostgresRepository(dsn string) (*PostgresRepository, error) {
 }
 
 func (repo *PostgresRepository) Save(originalURL string, shortedURL string) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+	_, err := repo.db.ExecContext(ctx, "INSERT INTO urls (original_url, short_url) VALUES ($1, $2)", originalURL, shortedURL)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
 func (repo *PostgresRepository) GetOriginalLink(shortedURL string) (string, error) {
-	return "", nil
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+
+	var originalURL string
+	err := repo.db.QueryRowContext(ctx, "SELECT original_url FROM urls WHERE short_url = $1", shortedURL).Scan(&originalURL)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return "", ErrRecordNotFound
+		} else {
+			return "", err
+		}
+	}
+	return originalURL, nil
 }
 
 func (repo *PostgresRepository) Ping() error {

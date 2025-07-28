@@ -3,8 +3,10 @@ package handler
 import (
 	"bytes"
 	"github.com/delyke/urlShortener/internal/config"
+	"github.com/delyke/urlShortener/internal/mocks"
 	"github.com/delyke/urlShortener/internal/repository"
 	"github.com/delyke/urlShortener/internal/service"
+	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 	"net/http"
 	"net/http/httptest"
@@ -53,19 +55,27 @@ func TestHandler_HandlePost(t *testing.T) {
 			request := httptest.NewRequest(tt.method, tt.request, bytes.NewReader(tt.body))
 			w := httptest.NewRecorder()
 			cfg := &config.Config{
-				RunAddr:         ":8080",
-				BaseAddr:        "http://localhost:8080",
-				LogLevel:        "debug",
-				FileStoragePath: "/storage.json",
+				RunAddr:  ":8080",
+				BaseAddr: "http://localhost:8080",
+				LogLevel: "debug",
 			}
 
-			repo, err := repository.NewFileRepository(cfg.FileStoragePath)
-			if err != nil {
-				t.Errorf("Failed to initialize repo: %v", err)
-				return
-			}
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			repo := mocks.NewMockURLRepository(ctrl)
 			svc := service.NewURLService(repo)
 			h := NewHandler(svc, cfg)
+
+			if tt.name == "Positive Test" {
+				repo.EXPECT().
+					GetOriginalLink(gomock.Any()).
+					Return("", repository.ErrRecordNotFound)
+
+				repo.EXPECT().
+					Save("https://vk.com", gomock.Any()).
+					Return(nil)
+			}
 
 			hh := http.HandlerFunc(h.HandlePost)
 			hh(w, request)

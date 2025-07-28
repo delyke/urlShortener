@@ -6,8 +6,10 @@ import (
 	"github.com/delyke/urlShortener/internal/config"
 	"github.com/delyke/urlShortener/internal/handler"
 	"github.com/delyke/urlShortener/internal/logger"
+	"github.com/delyke/urlShortener/internal/mocks"
 	"github.com/delyke/urlShortener/internal/repository"
 	"github.com/delyke/urlShortener/internal/service"
+	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 	"io"
 	"log"
@@ -60,16 +62,14 @@ func TestHandler_HandleGet(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := &config.Config{
-				RunAddr:         ":8080",
-				BaseAddr:        "http://localhost:8080",
-				LogLevel:        "debug",
-				FileStoragePath: "/storage.json",
+				RunAddr:  ":8080",
+				BaseAddr: "http://localhost:8080",
+				LogLevel: "debug",
 			}
-			repo, err := repository.NewFileRepository(cfg.FileStoragePath)
-			if err != nil {
-				t.Errorf("Failed to initialize repo: %v", err)
-				return
-			}
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			repo := mocks.NewMockURLRepository(ctrl)
 			svc := service.NewURLService(repo)
 			h := handler.NewHandler(svc, cfg)
 
@@ -80,6 +80,14 @@ func TestHandler_HandleGet(t *testing.T) {
 			r := app.NewRouter(h, l)
 
 			if tt.name == "Redirect to shorted Url" {
+				repo.EXPECT().
+					GetOriginalLink(gomock.Any()).
+					Return("", repository.ErrRecordNotFound)
+
+				repo.EXPECT().
+					Save("https://yandex.com", gomock.Any()).
+					Return(nil)
+
 				wPost := httptest.NewRecorder()
 				postRequest := httptest.NewRequest("POST", "/", bytes.NewReader([]byte("https://yandex.com")))
 				r.ServeHTTP(wPost, postRequest)
@@ -87,6 +95,9 @@ func TestHandler_HandleGet(t *testing.T) {
 				body, _ := io.ReadAll(postResult.Body)
 				postResult.Body.Close()
 				tt.request = strings.TrimPrefix(string(body), "http://localhost:8080/")
+				repo.EXPECT().
+					GetOriginalLink(gomock.Any()).
+					Return("https://yandex.com", nil)
 			}
 			w := httptest.NewRecorder()
 			request := httptest.NewRequest(tt.method, "/"+tt.request, nil)
