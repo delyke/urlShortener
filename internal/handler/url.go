@@ -179,7 +179,7 @@ func (h *Handler) HandleAPIShorten(w http.ResponseWriter, r *http.Request) {
 
 	shortedURL, err := url.JoinPath(h.config.BaseAddr, shortenURL)
 	if err != nil {
-		b, err := json.Marshal(ShortenURLErrorResponse{Error: "Inertal Server Error #1"})
+		b, err := json.Marshal(ShortenURLErrorResponse{Error: "Internal Server Error #1"})
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			log.Println(err)
@@ -193,7 +193,7 @@ func (h *Handler) HandleAPIShorten(w http.ResponseWriter, r *http.Request) {
 
 	b, err := json.Marshal(ShortenURLSuccessResponse{Result: shortedURL})
 	if err != nil {
-		b, err := json.Marshal(ShortenURLErrorResponse{Error: "Inertal Server Error #2"})
+		b, err := json.Marshal(ShortenURLErrorResponse{Error: "Internal Server Error #2"})
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			log.Println(err)
@@ -206,7 +206,7 @@ func (h *Handler) HandleAPIShorten(w http.ResponseWriter, r *http.Request) {
 	}
 	_, err = w.Write(b)
 	if err != nil {
-		b, err := json.Marshal(ShortenURLErrorResponse{Error: "Inertal Server Error #3"})
+		b, err := json.Marshal(ShortenURLErrorResponse{Error: "Internal Server Error #3"})
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			log.Println(err)
@@ -214,6 +214,19 @@ func (h *Handler) HandleAPIShorten(w http.ResponseWriter, r *http.Request) {
 		}
 		w.WriteHeader(http.StatusInternalServerError)
 		_, err = w.Write(b)
+		log.Println(err)
+		return
+	}
+}
+
+func (h *Handler) HandlePing(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	err := h.service.PingDatabase()
+	if err == nil {
+		w.WriteHeader(http.StatusOK)
+		return
+	} else {
+		w.WriteHeader(http.StatusInternalServerError)
 		log.Println(err)
 		return
 	}

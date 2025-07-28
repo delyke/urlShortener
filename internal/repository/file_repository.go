@@ -100,3 +100,7 @@ func (repo *FileRepository) GetOriginalLink(shortedURL string) (string, error) {
 func (repo *FileRepository) generateUUID() (string, error) {
 	return fmt.Sprintf("%d", len(repo.urls)+1), nil
 }
+
+func (repo *FileRepository) Ping() error {
+	return nil
+}

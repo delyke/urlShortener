@@ -16,7 +16,7 @@ func main() {
 	if err != nil {
 		log.Fatal("Failed to initialize config: ", err)
 	}
-	repo, err := repository.NewFileRepository(cfg.FileStoragePath)
+	repo, err := repository.NewPostgresRepository(cfg.DatabaseDSN)
 	if err != nil {
 		log.Fatal("Failed to initialize repo: ", err)
 	}

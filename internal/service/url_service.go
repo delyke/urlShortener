@@ -56,6 +56,10 @@ func (s *URLService) GetOriginalURL(shortenURL string) (string, error) {
 	return url, nil
 }
 
+func (s *URLService) PingDatabase() error {
+	return s.repo.Ping()
+}
+
 func generateShortenURL() string {
 	b := make([]byte, 6)
 	_, _ = rand.Read(b)

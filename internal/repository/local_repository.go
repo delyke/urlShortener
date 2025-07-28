@@ -36,3 +36,7 @@ func (repo *LocalRepository) GetOriginalLink(shortedURL string) (string, error) 
 	}
 	return originalURL, nil
 }
+
+func (repo *LocalRepository) Ping() error {
+	return nil
+}

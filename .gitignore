@@ -27,3 +27,4 @@ mysql_data
 
 .env
 storage.json
+docker-compose.yaml
