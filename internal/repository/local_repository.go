@@ -11,11 +11,11 @@ type LocalRepository struct {
 	mu   *sync.Mutex
 }
 
-func NewLocalRepository() *LocalRepository {
+func NewLocalRepository() (*LocalRepository, error) {
 	return &LocalRepository{
 		data: make(map[string]string),
 		mu:   &sync.Mutex{},
-	}
+	}, nil
 }
 
 func (repo *LocalRepository) Save(originalURL string, shortedURL string) error {
