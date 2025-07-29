@@ -17,6 +17,9 @@ func NewPostgresRepository(dsn string) (*PostgresRepository, error) {
 	if err != nil {
 		return nil, err
 	}
+	if err := RunMigrations(db, "migrations"); err != nil {
+		return nil, err
+	}
 	return &PostgresRepository{db: db}, nil
 }
 
