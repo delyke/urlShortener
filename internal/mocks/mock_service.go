@@ -7,6 +7,7 @@ package mocks
 import (
 	reflect "reflect"
 
+	model "github.com/delyke/urlShortener/internal/model"
 	gomock "github.com/golang/mock/gomock"
 )
 
@@ -74,4 +75,18 @@ func (m *MockURLRepository) Save(originalURL, shortedURL string) error {
 func (mr *MockURLRepositoryMockRecorder) Save(originalURL, shortedURL interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Save", reflect.TypeOf((*MockURLRepository)(nil).Save), originalURL, shortedURL)
+}
+
+// SaveBatch mocks base method.
+func (m *MockURLRepository) SaveBatch(records []model.URL) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SaveBatch", records)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// SaveBatch indicates an expected call of SaveBatch.
+func (mr *MockURLRepositoryMockRecorder) SaveBatch(records interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SaveBatch", reflect.TypeOf((*MockURLRepository)(nil).SaveBatch), records)
 }

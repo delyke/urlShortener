@@ -70,7 +70,7 @@ func TestHandler_HandleGet(t *testing.T) {
 			defer ctrl.Finish()
 
 			repo := mocks.NewMockURLRepository(ctrl)
-			svc := service.NewURLService(repo)
+			svc := service.NewURLService(repo, cfg)
 			h := handler.NewHandler(svc, cfg)
 
 			l, err := logger.Initialize(cfg.LogLevel)

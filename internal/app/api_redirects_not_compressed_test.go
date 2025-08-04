@@ -32,7 +32,7 @@ func TestGzipExpand(t *testing.T) {
 
 	repo := mocks.NewMockURLRepository(ctrl)
 
-	svc := service.NewURLService(repo)
+	svc := service.NewURLService(repo, cfg)
 	h := handler.NewHandler(svc, cfg)
 	l, err := logger.Initialize(cfg.LogLevel)
 	require.NoError(t, err)

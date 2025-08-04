@@ -88,7 +88,7 @@ func TestHandler_HandleApiShorten(t *testing.T) {
 			defer ctrl.Finish()
 
 			repo := mocks.NewMockURLRepository(ctrl)
-			svc := service.NewURLService(repo)
+			svc := service.NewURLService(repo, cfg)
 
 			h := NewHandler(svc, cfg)
 

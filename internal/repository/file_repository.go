@@ -104,3 +104,13 @@ func (repo *FileRepository) generateUUID() (string, error) {
 func (repo *FileRepository) Ping() error {
 	return nil
 }
+
+func (repo *FileRepository) SaveBatch(records []model.URL) error {
+	for _, record := range records {
+		err := repo.Save(record.OriginalURL, record.ShortURL)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}

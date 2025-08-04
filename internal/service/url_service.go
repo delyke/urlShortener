@@ -4,6 +4,8 @@ import (
 	"crypto/rand"
 	"encoding/base64"
 	"errors"
+	"github.com/delyke/urlShortener/internal/config"
+	"github.com/delyke/urlShortener/internal/model"
 	"github.com/delyke/urlShortener/internal/repository"
 	"log"
 	"strings"
@@ -11,10 +13,11 @@ import (
 
 type URLService struct {
 	repo repository.URLRepository
+	cfg  *config.Config
 }
 
-func NewURLService(repo repository.URLRepository) *URLService {
-	return &URLService{repo: repo}
+func NewURLService(repo repository.URLRepository, config *config.Config) *URLService {
+	return &URLService{repo: repo, cfg: config}
 }
 
 var ErrNotFound = errors.New("url not found")
@@ -58,6 +61,32 @@ func (s *URLService) GetOriginalURL(shortenURL string) (string, error) {
 
 func (s *URLService) PingDatabase() error {
 	return s.repo.Ping()
+}
+
+func (s *URLService) ShortenBatch(items []model.BatchRequestItem) ([]model.BatchResponseItem, error) {
+	var records []model.URL
+	var responses []model.BatchResponseItem
+
+	for _, item := range items {
+		short, err := s.ShortenURL(item.OriginalURL)
+		if err != nil {
+			return nil, err
+		}
+		records = append(records, model.URL{
+			OriginalURL: item.OriginalURL,
+			ShortURL:    short,
+		})
+		responses = append(responses, model.BatchResponseItem{
+			CorrelationID: item.CorrelationID,
+			ShortURL:      s.cfg.BaseAddr + "/" + short,
+		})
+	}
+
+	if err := s.repo.SaveBatch(records); err != nil {
+		return nil, err
+	}
+
+	return responses, nil
 }
 
 func generateShortenURL() string {

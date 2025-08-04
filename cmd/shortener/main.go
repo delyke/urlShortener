@@ -36,7 +36,7 @@ func main() {
 	if err != nil {
 		l.Fatal("Failed to initialize repo: ", err)
 	}
-	svc := service.NewURLService(repo)
+	svc := service.NewURLService(repo, cfg)
 	h := handler.NewHandler(svc, cfg)
 	l.Info("Running server on", cfg.RunAddr)
 

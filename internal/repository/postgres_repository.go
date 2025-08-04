@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"github.com/delyke/urlShortener/internal/model"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"time"
 )
@@ -47,6 +48,28 @@ func (repo *PostgresRepository) GetOriginalLink(shortedURL string) (string, erro
 		}
 	}
 	return originalURL, nil
+}
+
+func (repo *PostgresRepository) SaveBatch(records []model.URL) error {
+	tx, err := repo.db.Begin()
+	if err != nil {
+		return err
+	}
+	stmt, err := tx.Prepare("INSERT INTO urls (original_url, short_url) VALUES ($1, $2)")
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+	defer stmt.Close()
+
+	for _, record := range records {
+		if _, err := stmt.Exec(record.OriginalURL, record.ShortURL); err != nil {
+			tx.Rollback()
+			return err
+		}
+	}
+
+	return tx.Commit()
 }
 
 func (repo *PostgresRepository) Ping() error {

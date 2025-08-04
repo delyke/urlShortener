@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/delyke/urlShortener/internal/config"
+	"github.com/delyke/urlShortener/internal/model"
 	"github.com/delyke/urlShortener/internal/service"
 	"github.com/go-chi/chi/v5"
 	"io"
@@ -230,4 +231,36 @@ func (h *Handler) HandlePing(w http.ResponseWriter, r *http.Request) {
 		log.Println(err)
 		return
 	}
+}
+
+func (h *Handler) HandleAPIShortenBatch(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+
+	var reqItems []model.BatchRequestItem
+	if err := json.NewDecoder(r.Body).Decode(&reqItems); err != nil || len(reqItems) == 0 {
+		b, err := json.Marshal(ShortenURLErrorResponse{Error: "Invalid or empty request"})
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			log.Println(err)
+			return
+		}
+		w.WriteHeader(http.StatusBadRequest)
+		_, err = w.Write(b)
+		log.Println(err)
+		return
+	}
+
+	respItems, err := h.service.ShortenBatch(reqItems)
+	if err != nil {
+		http.Error(w, "failed to shorten URLs", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+	_ = json.NewEncoder(w).Encode(respItems)
 }

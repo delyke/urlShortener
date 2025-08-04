@@ -3,6 +3,7 @@ package repository
 import (
 	"errors"
 	"fmt"
+	"github.com/delyke/urlShortener/internal/model"
 	"sync"
 )
 
@@ -38,5 +39,14 @@ func (repo *LocalRepository) GetOriginalLink(shortedURL string) (string, error) 
 }
 
 func (repo *LocalRepository) Ping() error {
+	return nil
+}
+
+func (repo *LocalRepository) SaveBatch(records []model.URL) error {
+	repo.mu.Lock()
+	defer repo.mu.Unlock()
+	for _, record := range records {
+		repo.data[record.ShortURL] = record.OriginalURL
+	}
 	return nil
 }
