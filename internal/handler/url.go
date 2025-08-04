@@ -5,6 +5,7 @@ import (
 	"errors"
 	"github.com/delyke/urlShortener/internal/config"
 	"github.com/delyke/urlShortener/internal/model"
+	"github.com/delyke/urlShortener/internal/repository"
 	"github.com/delyke/urlShortener/internal/service"
 	"github.com/go-chi/chi/v5"
 	"io"
@@ -43,6 +44,14 @@ func (h *Handler) HandlePost(w http.ResponseWriter, r *http.Request) {
 		if errors.Is(err, service.ErrCanNotCreateURL) {
 			log.Println("URL shortening error:", err)
 			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		var conflict *repository.ConflictError
+		if errors.As(err, &conflict) {
+			existingURL, _ := url.JoinPath(h.config.BaseAddr, conflict.ShortURL)
+			log.Println("URL shortening conflict:", existingURL)
+			w.WriteHeader(http.StatusConflict)
+			_, _ = w.Write([]byte(existingURL))
 			return
 		}
 		w.WriteHeader(http.StatusInternalServerError)
@@ -163,6 +172,40 @@ func (h *Handler) HandleAPIShorten(w http.ResponseWriter, r *http.Request) {
 
 	shortenURL, err := h.service.ShortenURL(request.URL)
 	if err != nil {
+
+		var conflict *repository.ConflictError
+		if errors.As(err, &conflict) {
+			existingURL, _ := url.JoinPath(h.config.BaseAddr, conflict.ShortURL)
+			log.Println("URL shortening conflict:", existingURL)
+			w.WriteHeader(http.StatusConflict)
+			b, err := json.Marshal(ShortenURLSuccessResponse{Result: existingURL})
+			if err != nil {
+				b, err := json.Marshal(ShortenURLErrorResponse{Error: "Internal Server Error #2"})
+				if err != nil {
+					w.WriteHeader(http.StatusInternalServerError)
+					log.Println(err)
+					return
+				}
+				w.WriteHeader(http.StatusInternalServerError)
+				_, err = w.Write(b)
+				log.Println(err)
+				return
+			}
+			_, err = w.Write(b)
+			if err != nil {
+				b, err := json.Marshal(ShortenURLErrorResponse{Error: "Internal Server Error #3"})
+				if err != nil {
+					w.WriteHeader(http.StatusInternalServerError)
+					log.Println(err)
+					return
+				}
+				w.WriteHeader(http.StatusInternalServerError)
+				_, err = w.Write(b)
+				log.Println(err)
+				return
+			}
+			return
+		}
 		log.Printf("shorten url error: %v", err)
 		b, err := json.Marshal(ShortenURLErrorResponse{Error: "Failed to shorten URL"})
 		if err != nil {

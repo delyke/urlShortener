@@ -49,6 +49,21 @@ func (mr *MockURLRepositoryMockRecorder) GetOriginalLink(shortedURL interface{})
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOriginalLink", reflect.TypeOf((*MockURLRepository)(nil).GetOriginalLink), shortedURL)
 }
 
+// GetShortURLByOriginal mocks base method.
+func (m *MockURLRepository) GetShortURLByOriginal(originalURL string) (string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetShortURLByOriginal", originalURL)
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetShortURLByOriginal indicates an expected call of GetShortURLByOriginal.
+func (mr *MockURLRepositoryMockRecorder) GetShortURLByOriginal(originalURL interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetShortURLByOriginal", reflect.TypeOf((*MockURLRepository)(nil).GetShortURLByOriginal), originalURL)
+}
+
 // Ping mocks base method.
 func (m *MockURLRepository) Ping() error {
 	m.ctrl.T.Helper()

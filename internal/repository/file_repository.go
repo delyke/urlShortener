@@ -67,15 +67,21 @@ func (c *Consumer) Close() error {
 	return c.file.Close()
 }
 
-func (repo *FileRepository) Save(originalURL string, shortedURL string) error {
+func (repo *FileRepository) Save(originalURL string, shortedURL string) (string, error) {
+	for _, u := range repo.urls {
+		if u.OriginalURL == originalURL {
+			return u.ShortURL, NewConflictError(u.ShortURL)
+		}
+	}
+
 	producer, err := newProducer(repo.filename)
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	UUID, err := repo.generateUUID()
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	url := model.URL{
@@ -84,8 +90,13 @@ func (repo *FileRepository) Save(originalURL string, shortedURL string) error {
 		ShortURL:    shortedURL,
 	}
 	repo.urls = append(repo.urls, url)
+
 	producer.encoder.SetIndent("", "\t")
-	return producer.encoder.Encode(repo.urls)
+	if err := producer.encoder.Encode(repo.urls); err != nil {
+		return "", err
+	}
+
+	return shortedURL, nil
 }
 
 func (repo *FileRepository) GetOriginalLink(shortedURL string) (string, error) {
@@ -107,10 +118,18 @@ func (repo *FileRepository) Ping() error {
 
 func (repo *FileRepository) SaveBatch(records []model.URL) error {
 	for _, record := range records {
-		err := repo.Save(record.OriginalURL, record.ShortURL)
+		_, err := repo.Save(record.OriginalURL, record.ShortURL)
 		if err != nil {
 			return err
 		}
 	}
 	return nil
+}
+func (repo *FileRepository) GetShortURLByOriginal(originalURL string) (string, error) {
+	for _, url := range repo.urls {
+		if url.OriginalURL == originalURL {
+			return url.ShortURL, nil
+		}
+	}
+	return "", ErrRecordNotFound
 }

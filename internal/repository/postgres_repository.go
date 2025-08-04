@@ -4,7 +4,10 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 	"github.com/delyke/urlShortener/internal/model"
+	"github.com/jackc/pgerrcode"
+	"github.com/jackc/pgx/v5/pgconn"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"log"
 	"time"
@@ -25,14 +28,74 @@ func NewPostgresRepository(dsn string) (*PostgresRepository, error) {
 	return &PostgresRepository{db: db}, nil
 }
 
-func (repo *PostgresRepository) Save(originalURL string, shortedURL string) error {
+type ConflictError struct {
+	ShortURL string
+}
+
+func (e *ConflictError) Error() string {
+	return fmt.Sprintf("url already exists with short URL: %s", e.ShortURL)
+}
+
+func NewConflictError(shortURL string) error {
+	return &ConflictError{ShortURL: shortURL}
+}
+
+func (repo *PostgresRepository) Save(originalURL string, shortedURL string) (string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
-	_, err := repo.db.ExecContext(ctx, "INSERT INTO urls (original_url, short_url) VALUES ($1, $2)", originalURL, shortedURL)
+
+	query := `
+        INSERT INTO urls (original_url, short_url)
+        VALUES ($1, $2)
+        ON CONFLICT (original_url) DO NOTHING
+    `
+	result, err := repo.db.ExecContext(ctx, query, originalURL, shortedURL)
 	if err != nil {
-		return err
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && pgErr.Code == pgerrcode.UniqueViolation {
+			existing, err := repo.GetShortURLByOriginal(originalURL)
+			if err != nil {
+				return "", err
+			}
+			return "", NewConflictError(existing)
+		}
+		return "", err
 	}
-	return nil
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return "", err
+	}
+
+	if rowsAffected == 0 {
+		existing, err := repo.GetShortURLByOriginal(originalURL)
+		if err != nil {
+			return "", err
+		}
+		return existing, NewConflictError(existing)
+	}
+
+	return shortedURL, nil
+}
+
+func (repo *PostgresRepository) GetShortURLByOriginal(originalURL string) (string, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+
+	var shortedURL string
+	err := repo.db.QueryRowContext(ctx,
+		"SELECT short_url FROM urls WHERE original_url = $1",
+		originalURL,
+	).Scan(&shortedURL)
+
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return "", ErrRecordNotFound
+		}
+		return "", err
+	}
+
+	return shortedURL, nil
 }
 
 func (repo *PostgresRepository) GetOriginalLink(shortedURL string) (string, error) {

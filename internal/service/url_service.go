@@ -46,7 +46,7 @@ func (s *URLService) ShortenURL(originalURL string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	err = s.repo.Save(originalURL, shortenURL)
+	shortenURL, err = s.repo.Save(originalURL, shortenURL)
 	if err != nil {
 		return "", err
 	}
