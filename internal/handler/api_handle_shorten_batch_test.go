@@ -101,14 +101,6 @@ func TestHandler_HandleAPIShortenBatch(t *testing.T) {
 					AnyTimes()
 
 				repo.EXPECT().
-					Save("https://yandex.com", gomock.Any()).
-					Return(nil)
-
-				repo.EXPECT().
-					Save("https://google.com", gomock.Any()).
-					Return(nil)
-
-				repo.EXPECT().
 					SaveBatch(gomock.Any()).
 					Return(nil)
 			}
