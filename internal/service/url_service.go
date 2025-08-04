@@ -23,7 +23,7 @@ func NewURLService(repo repository.URLRepository, config *config.Config) *URLSer
 var ErrNotFound = errors.New("url not found")
 var ErrCanNotCreateURL = errors.New("url cannot be created")
 
-func (s *URLService) ShortenURL(originalURL string) (string, error) {
+func (s *URLService) GetFreeShortURL() (string, error) {
 	var shortenURL string
 	for i := 0; i < 3; i++ {
 		shortenURL = generateShortenURL()
@@ -38,8 +38,15 @@ func (s *URLService) ShortenURL(originalURL string) (string, error) {
 	if shortenURL == "" {
 		return "", ErrCanNotCreateURL
 	}
+	return shortenURL, nil
+}
 
-	err := s.repo.Save(originalURL, shortenURL)
+func (s *URLService) ShortenURL(originalURL string) (string, error) {
+	shortenURL, err := s.GetFreeShortURL()
+	if err != nil {
+		return "", err
+	}
+	err = s.repo.Save(originalURL, shortenURL)
 	if err != nil {
 		return "", err
 	}
@@ -68,7 +75,7 @@ func (s *URLService) ShortenBatch(items []model.BatchRequestItem) ([]model.Batch
 	var responses []model.BatchResponseItem
 
 	for _, item := range items {
-		short, err := s.ShortenURL(item.OriginalURL)
+		short, err := s.GetFreeShortURL()
 		if err != nil {
 			return nil, err
 		}

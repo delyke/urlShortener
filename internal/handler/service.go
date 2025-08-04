@@ -7,4 +7,5 @@ type ShortenURLService interface {
 	GetOriginalURL(shortenURL string) (string, error)
 	ShortenBatch(items []model.BatchRequestItem) ([]model.BatchResponseItem, error)
 	PingDatabase() error
+	GetFreeShortURL() (string, error)
 }
