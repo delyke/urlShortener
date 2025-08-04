@@ -234,10 +234,6 @@ func (h *Handler) HandlePing(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) HandleAPIShortenBatch(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
 	w.Header().Set("Content-Type", "application/json")
 
 	var reqItems []model.BatchRequestItem
@@ -256,7 +252,15 @@ func (h *Handler) HandleAPIShortenBatch(w http.ResponseWriter, r *http.Request) 
 
 	respItems, err := h.service.ShortenBatch(reqItems)
 	if err != nil {
-		http.Error(w, "failed to shorten URLs", http.StatusInternalServerError)
+		b, err := json.Marshal(ShortenURLErrorResponse{Error: "Failed to shorten URL"})
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			log.Println(err)
+			return
+		}
+		w.WriteHeader(http.StatusInternalServerError)
+		_, err = w.Write(b)
+		log.Println(err)
 		return
 	}
 
