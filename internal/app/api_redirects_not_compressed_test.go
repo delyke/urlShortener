@@ -50,7 +50,7 @@ func TestGzipExpand(t *testing.T) {
 
 	repo.EXPECT().
 		Save(originalURL, gomock.Any()).
-		Return(nil)
+		Return("abc123", nil)
 
 	repo.EXPECT().
 		GetOriginalLink(gomock.Any()).

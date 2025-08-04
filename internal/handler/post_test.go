@@ -74,7 +74,7 @@ func TestHandler_HandlePost(t *testing.T) {
 
 				repo.EXPECT().
 					Save("https://vk.com", gomock.Any()).
-					Return(nil)
+					Return("abc123", nil)
 			}
 
 			hh := http.HandlerFunc(h.HandlePost)

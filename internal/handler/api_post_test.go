@@ -99,7 +99,7 @@ func TestHandler_HandleApiShorten(t *testing.T) {
 
 				repo.EXPECT().
 					Save("http://www.google.com", gomock.Any()).
-					Return(nil)
+					Return("abc123", nil)
 			}
 
 			hh := http.HandlerFunc(h.HandleAPIShorten)

@@ -86,7 +86,7 @@ func TestHandler_HandleGet(t *testing.T) {
 
 				repo.EXPECT().
 					Save("https://yandex.com", gomock.Any()).
-					Return(nil)
+					Return("abc123", nil)
 
 				wPost := httptest.NewRecorder()
 				postRequest := httptest.NewRequest("POST", "/", bytes.NewReader([]byte("https://yandex.com")))
