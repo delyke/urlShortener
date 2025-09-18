@@ -7,8 +7,10 @@ import (
 	"github.com/delyke/urlShortener/internal/config"
 	"github.com/delyke/urlShortener/internal/handler"
 	"github.com/delyke/urlShortener/internal/logger"
+	"github.com/delyke/urlShortener/internal/mocks"
 	"github.com/delyke/urlShortener/internal/repository"
 	"github.com/delyke/urlShortener/internal/service"
+	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 	"io"
 	"log"
@@ -25,12 +27,12 @@ func TestGzipExpand(t *testing.T) {
 		LogLevel:        "debug",
 		FileStoragePath: "/storage.json",
 	}
-	repo, err := repository.NewFileRepository(cfg.FileStoragePath)
-	if err != nil {
-		t.Errorf("Failed to initialize repo: %v", err)
-		return
-	}
-	svc := service.NewURLService(repo)
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	repo := mocks.NewMockURLRepository(ctrl)
+
+	svc := service.NewURLService(repo, cfg)
 	h := handler.NewHandler(svc, cfg)
 	l, err := logger.Initialize(cfg.LogLevel)
 	require.NoError(t, err)
@@ -46,12 +48,26 @@ func TestGzipExpand(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, zw.Close())
 
+	repo.EXPECT().
+		Save(originalURL, gomock.Any()).
+		Return("abc123", nil)
+
+	repo.EXPECT().
+		GetOriginalLink(gomock.Any()).
+		Return("", repository.ErrRecordNotFound)
+
 	req := httptest.NewRequest(http.MethodPost, "/api/shorten", &buf)
+
 	req.Header.Set("Content-Encoding", "gzip")
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept-Encoding", "gzip")
 
 	w := httptest.NewRecorder()
+
+	repo.EXPECT().
+		GetOriginalLink(gomock.Any()).
+		Return(originalURL, nil)
+
 	router.ServeHTTP(w, req)
 
 	res := w.Result()

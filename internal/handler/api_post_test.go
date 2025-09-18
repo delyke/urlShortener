@@ -3,8 +3,10 @@ package handler
 import (
 	"bytes"
 	"github.com/delyke/urlShortener/internal/config"
+	"github.com/delyke/urlShortener/internal/mocks"
 	"github.com/delyke/urlShortener/internal/repository"
 	"github.com/delyke/urlShortener/internal/service"
+	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 	"net/http"
 	"net/http/httptest"
@@ -82,14 +84,23 @@ func TestHandler_HandleApiShorten(t *testing.T) {
 				LogLevel:        "debug",
 				FileStoragePath: "/storage.json",
 			}
-			repo, err := repository.NewFileRepository(cfg.FileStoragePath)
-			if err != nil {
-				t.Errorf("Failed to initialize repo: %v", err)
-				return
-			}
-			svc := service.NewURLService(repo)
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			repo := mocks.NewMockURLRepository(ctrl)
+			svc := service.NewURLService(repo, cfg)
 
 			h := NewHandler(svc, cfg)
+
+			if tt.name == "Api Post Shorten Success" {
+				repo.EXPECT().
+					GetOriginalLink(gomock.Any()).
+					Return("", repository.ErrRecordNotFound)
+
+				repo.EXPECT().
+					Save("http://www.google.com", gomock.Any()).
+					Return("abc123", nil)
+			}
 
 			hh := http.HandlerFunc(h.HandleAPIShorten)
 			hh(w, request)

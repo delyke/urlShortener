@@ -25,5 +25,9 @@ vendor/
 # Mysql Storage from docker-compose
 mysql_data
 
+postgres_data
+pgadmin_data
+
 .env
 storage.json
+docker-compose.yaml

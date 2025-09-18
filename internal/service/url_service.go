@@ -4,6 +4,8 @@ import (
 	"crypto/rand"
 	"encoding/base64"
 	"errors"
+	"github.com/delyke/urlShortener/internal/config"
+	"github.com/delyke/urlShortener/internal/model"
 	"github.com/delyke/urlShortener/internal/repository"
 	"log"
 	"strings"
@@ -11,16 +13,17 @@ import (
 
 type URLService struct {
 	repo repository.URLRepository
+	cfg  *config.Config
 }
 
-func NewURLService(repo repository.URLRepository) *URLService {
-	return &URLService{repo: repo}
+func NewURLService(repo repository.URLRepository, config *config.Config) *URLService {
+	return &URLService{repo: repo, cfg: config}
 }
 
 var ErrNotFound = errors.New("url not found")
 var ErrCanNotCreateURL = errors.New("url cannot be created")
 
-func (s *URLService) ShortenURL(originalURL string) (string, error) {
+func (s *URLService) GetFreeShortURL() (string, error) {
 	var shortenURL string
 	for i := 0; i < 3; i++ {
 		shortenURL = generateShortenURL()
@@ -35,8 +38,15 @@ func (s *URLService) ShortenURL(originalURL string) (string, error) {
 	if shortenURL == "" {
 		return "", ErrCanNotCreateURL
 	}
+	return shortenURL, nil
+}
 
-	err := s.repo.Save(originalURL, shortenURL)
+func (s *URLService) ShortenURL(originalURL string) (string, error) {
+	shortenURL, err := s.GetFreeShortURL()
+	if err != nil {
+		return "", err
+	}
+	shortenURL, err = s.repo.Save(originalURL, shortenURL)
 	if err != nil {
 		return "", err
 	}
@@ -54,6 +64,36 @@ func (s *URLService) GetOriginalURL(shortenURL string) (string, error) {
 		}
 	}
 	return url, nil
+}
+
+func (s *URLService) PingDatabase() error {
+	return s.repo.Ping()
+}
+
+func (s *URLService) ShortenBatch(items []model.BatchRequestItem) ([]model.BatchResponseItem, error) {
+	var records []model.URL
+	var responses []model.BatchResponseItem
+
+	for _, item := range items {
+		short, err := s.GetFreeShortURL()
+		if err != nil {
+			return nil, err
+		}
+		records = append(records, model.URL{
+			OriginalURL: item.OriginalURL,
+			ShortURL:    short,
+		})
+		responses = append(responses, model.BatchResponseItem{
+			CorrelationID: item.CorrelationID,
+			ShortURL:      s.cfg.BaseAddr + "/" + short,
+		})
+	}
+
+	if err := s.repo.SaveBatch(records); err != nil {
+		return nil, err
+	}
+
+	return responses, nil
 }
 
 func generateShortenURL() string {

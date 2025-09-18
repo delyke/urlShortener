@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/delyke/urlShortener/internal/config"
+	"github.com/delyke/urlShortener/internal/model"
+	"github.com/delyke/urlShortener/internal/repository"
 	"github.com/delyke/urlShortener/internal/service"
 	"github.com/go-chi/chi/v5"
 	"io"
@@ -42,6 +44,14 @@ func (h *Handler) HandlePost(w http.ResponseWriter, r *http.Request) {
 		if errors.Is(err, service.ErrCanNotCreateURL) {
 			log.Println("URL shortening error:", err)
 			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		var conflict *repository.ConflictError
+		if errors.As(err, &conflict) {
+			existingURL, _ := url.JoinPath(h.config.BaseAddr, conflict.ShortURL)
+			log.Println("URL shortening conflict:", existingURL)
+			w.WriteHeader(http.StatusConflict)
+			_, _ = w.Write([]byte(existingURL))
 			return
 		}
 		w.WriteHeader(http.StatusInternalServerError)
@@ -162,6 +172,40 @@ func (h *Handler) HandleAPIShorten(w http.ResponseWriter, r *http.Request) {
 
 	shortenURL, err := h.service.ShortenURL(request.URL)
 	if err != nil {
+
+		var conflict *repository.ConflictError
+		if errors.As(err, &conflict) {
+			existingURL, _ := url.JoinPath(h.config.BaseAddr, conflict.ShortURL)
+			log.Println("URL shortening conflict:", existingURL)
+			w.WriteHeader(http.StatusConflict)
+			b, err := json.Marshal(ShortenURLSuccessResponse{Result: existingURL})
+			if err != nil {
+				b, err := json.Marshal(ShortenURLErrorResponse{Error: "Internal Server Error #2"})
+				if err != nil {
+					w.WriteHeader(http.StatusInternalServerError)
+					log.Println(err)
+					return
+				}
+				w.WriteHeader(http.StatusInternalServerError)
+				_, err = w.Write(b)
+				log.Println(err)
+				return
+			}
+			_, err = w.Write(b)
+			if err != nil {
+				b, err := json.Marshal(ShortenURLErrorResponse{Error: "Internal Server Error #3"})
+				if err != nil {
+					w.WriteHeader(http.StatusInternalServerError)
+					log.Println(err)
+					return
+				}
+				w.WriteHeader(http.StatusInternalServerError)
+				_, err = w.Write(b)
+				log.Println(err)
+				return
+			}
+			return
+		}
 		log.Printf("shorten url error: %v", err)
 		b, err := json.Marshal(ShortenURLErrorResponse{Error: "Failed to shorten URL"})
 		if err != nil {
@@ -179,7 +223,7 @@ func (h *Handler) HandleAPIShorten(w http.ResponseWriter, r *http.Request) {
 
 	shortedURL, err := url.JoinPath(h.config.BaseAddr, shortenURL)
 	if err != nil {
-		b, err := json.Marshal(ShortenURLErrorResponse{Error: "Inertal Server Error #1"})
+		b, err := json.Marshal(ShortenURLErrorResponse{Error: "Internal Server Error #1"})
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			log.Println(err)
@@ -193,7 +237,7 @@ func (h *Handler) HandleAPIShorten(w http.ResponseWriter, r *http.Request) {
 
 	b, err := json.Marshal(ShortenURLSuccessResponse{Result: shortedURL})
 	if err != nil {
-		b, err := json.Marshal(ShortenURLErrorResponse{Error: "Inertal Server Error #2"})
+		b, err := json.Marshal(ShortenURLErrorResponse{Error: "Internal Server Error #2"})
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			log.Println(err)
@@ -206,7 +250,7 @@ func (h *Handler) HandleAPIShorten(w http.ResponseWriter, r *http.Request) {
 	}
 	_, err = w.Write(b)
 	if err != nil {
-		b, err := json.Marshal(ShortenURLErrorResponse{Error: "Inertal Server Error #3"})
+		b, err := json.Marshal(ShortenURLErrorResponse{Error: "Internal Server Error #3"})
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			log.Println(err)
@@ -216,5 +260,56 @@ func (h *Handler) HandleAPIShorten(w http.ResponseWriter, r *http.Request) {
 		_, err = w.Write(b)
 		log.Println(err)
 		return
+	}
+}
+
+func (h *Handler) HandlePing(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	err := h.service.PingDatabase()
+	if err == nil {
+		w.WriteHeader(http.StatusOK)
+		return
+	} else {
+		w.WriteHeader(http.StatusInternalServerError)
+		log.Println(err)
+		return
+	}
+}
+
+func (h *Handler) HandleAPIShortenBatch(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	var reqItems []model.BatchRequestItem
+	if err := json.NewDecoder(r.Body).Decode(&reqItems); err != nil || len(reqItems) == 0 {
+		b, err := json.Marshal(ShortenURLErrorResponse{Error: "Invalid or empty request"})
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			log.Println(err)
+			return
+		}
+		w.WriteHeader(http.StatusBadRequest)
+		_, err = w.Write(b)
+		log.Println(err)
+		return
+	}
+
+	respItems, err := h.service.ShortenBatch(reqItems)
+	if err != nil {
+		b, err := json.Marshal(ShortenURLErrorResponse{Error: "Failed to shorten URL"})
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			log.Println(err)
+			return
+		}
+		w.WriteHeader(http.StatusInternalServerError)
+		_, err = w.Write(b)
+		log.Println(err)
+		return
+	}
+
+	w.WriteHeader(http.StatusCreated)
+	err = json.NewEncoder(w).Encode(respItems)
+	if err != nil {
+		log.Printf("Error encode: %v", err)
 	}
 }
