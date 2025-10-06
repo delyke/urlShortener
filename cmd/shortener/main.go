@@ -40,7 +40,7 @@ func main() {
 	h := handler.NewHandler(svc, cfg)
 	l.Info("Running server on", cfg.RunAddr)
 
-	err = http.ListenAndServe(cfg.RunAddr, app.NewRouter(h, l))
+	err = http.ListenAndServe(cfg.RunAddr, app.NewRouter(h, l, cfg, svc))
 	if err != nil {
 		l.Fatal("Failed listen and serve:", err)
 	}

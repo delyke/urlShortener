@@ -7,15 +7,18 @@ import (
 	"io"
 	"log"
 	"os"
+	"time"
 )
 
 type FileRepository struct {
 	filename string
 	urls     []model.URL
+	users    []model.User
 }
 
 func NewFileRepository(filename string) (*FileRepository, error) {
 	var urls []model.URL
+	var users []model.User
 	consumer, err := newConsumer(filename)
 	if err != nil {
 		return nil, err
@@ -30,6 +33,7 @@ func NewFileRepository(filename string) (*FileRepository, error) {
 	return &FileRepository{
 		filename: filename,
 		urls:     urls,
+		users:    users,
 	}, nil
 }
 
@@ -67,7 +71,7 @@ func (c *Consumer) Close() error {
 	return c.file.Close()
 }
 
-func (repo *FileRepository) Save(originalURL string, shortedURL string) (string, error) {
+func (repo *FileRepository) Save(originalURL string, shortedURL string, userID int64) (string, error) {
 	for _, u := range repo.urls {
 		if u.OriginalURL == originalURL {
 			return u.ShortURL, NewConflictError(u.ShortURL)
@@ -88,6 +92,7 @@ func (repo *FileRepository) Save(originalURL string, shortedURL string) (string,
 		UUID:        UUID,
 		OriginalURL: originalURL,
 		ShortURL:    shortedURL,
+		UserID:      userID,
 	}
 	repo.urls = append(repo.urls, url)
 
@@ -118,7 +123,7 @@ func (repo *FileRepository) Ping() error {
 
 func (repo *FileRepository) SaveBatch(records []model.URL) error {
 	for _, record := range records {
-		_, err := repo.Save(record.OriginalURL, record.ShortURL)
+		_, err := repo.Save(record.OriginalURL, record.ShortURL, record.UserID)
 		if err != nil {
 			return err
 		}
@@ -132,4 +137,36 @@ func (repo *FileRepository) GetShortURLByOriginal(originalURL string) (string, e
 		}
 	}
 	return "", ErrRecordNotFound
+}
+
+func (repo *FileRepository) CreateUser() (int64, error) {
+	producer, err := newProducer(repo.filename)
+	if err != nil {
+
+		return 0, err
+	}
+
+	user := model.User{
+		ID:        int64(len(repo.users) + 1),
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+	}
+	repo.users = append(repo.users, user)
+
+	producer.encoder.SetIndent("", "\t")
+	if err := producer.encoder.Encode(repo.users); err != nil {
+		return 0, err
+	}
+
+	return user.ID, nil
+}
+
+func (repo *FileRepository) GetURLsByUserID(userID int64) (*[]model.URL, error) {
+	var urls []model.URL
+	for _, url := range repo.urls {
+		if url.UserID == userID {
+			urls = append(urls, url)
+		}
+	}
+	return &urls, nil
 }

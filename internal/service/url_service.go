@@ -23,6 +23,19 @@ func NewURLService(repo repository.URLRepository, config *config.Config) *URLSer
 var ErrNotFound = errors.New("url not found")
 var ErrCanNotCreateURL = errors.New("url cannot be created")
 
+func (s *URLService) CreateUser() (int64, error) {
+	return s.repo.CreateUser()
+}
+
+func (s *URLService) GetURLsByUser(userID int64) (*[]model.URL, error) {
+	var urls *[]model.URL
+	urls, err := s.repo.GetURLsByUserID(userID)
+	if err != nil {
+		return nil, err
+	}
+	return urls, nil
+}
+
 func (s *URLService) GetFreeShortURL() (string, error) {
 	var shortenURL string
 	for i := 0; i < 3; i++ {
@@ -41,12 +54,12 @@ func (s *URLService) GetFreeShortURL() (string, error) {
 	return shortenURL, nil
 }
 
-func (s *URLService) ShortenURL(originalURL string) (string, error) {
+func (s *URLService) ShortenURL(originalURL string, userID int64) (string, error) {
 	shortenURL, err := s.GetFreeShortURL()
 	if err != nil {
 		return "", err
 	}
-	shortenURL, err = s.repo.Save(originalURL, shortenURL)
+	shortenURL, err = s.repo.Save(originalURL, shortenURL, userID)
 	if err != nil {
 		return "", err
 	}
@@ -70,7 +83,7 @@ func (s *URLService) PingDatabase() error {
 	return s.repo.Ping()
 }
 
-func (s *URLService) ShortenBatch(items []model.BatchRequestItem) ([]model.BatchResponseItem, error) {
+func (s *URLService) ShortenBatch(items []model.BatchRequestItem, userID int64) ([]model.BatchResponseItem, error) {
 	var records []model.URL
 	var responses []model.BatchResponseItem
 
@@ -82,6 +95,7 @@ func (s *URLService) ShortenBatch(items []model.BatchRequestItem) ([]model.Batch
 		records = append(records, model.URL{
 			OriginalURL: item.OriginalURL,
 			ShortURL:    short,
+			UserID:      userID,
 		})
 		responses = append(responses, model.BatchResponseItem{
 			CorrelationID: item.CorrelationID,

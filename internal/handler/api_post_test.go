@@ -98,7 +98,7 @@ func TestHandler_HandleApiShorten(t *testing.T) {
 					Return("", repository.ErrRecordNotFound)
 
 				repo.EXPECT().
-					Save("http://www.google.com", gomock.Any()).
+					Save("http://www.google.com", gomock.Any(), gomock.Any()).
 					Return("abc123", nil)
 			}
 

@@ -40,16 +40,42 @@ func NewConflictError(shortURL string) error {
 	return &ConflictError{ShortURL: shortURL}
 }
 
-func (repo *PostgresRepository) Save(originalURL string, shortedURL string) (string, error) {
+func (repo *PostgresRepository) GetURLsByUserID(userID int64) (*[]model.URL, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
+	var urls []model.URL
+	query := `SELECT * FROM urls WHERE user_id = $1`
+	rows, err := repo.db.QueryContext(ctx, query, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var url model.URL
+		if err := rows.Scan(&url.UUID, &url.ShortURL, &url.OriginalURL, &url.UserID); err != nil {
+			return nil, err
+		}
+		urls = append(urls, url)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
 
+	if len(urls) == 0 {
+		return nil, ErrRecordNotFound
+	}
+	return &urls, nil
+}
+
+func (repo *PostgresRepository) Save(originalURL string, shortedURL string, userID int64) (string, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
 	query := `
-        INSERT INTO urls (original_url, short_url)
-        VALUES ($1, $2)
+        INSERT INTO urls (original_url, short_url, user_id)
+        VALUES ($1, $2, $3)
         ON CONFLICT (original_url) DO NOTHING
     `
-	result, err := repo.db.ExecContext(ctx, query, originalURL, shortedURL)
+	result, err := repo.db.ExecContext(ctx, query, originalURL, shortedURL, userID)
 	if err != nil {
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) && pgErr.Code == pgerrcode.UniqueViolation {
@@ -150,4 +176,14 @@ func (repo *PostgresRepository) Ping() error {
 		return err
 	}
 	return nil
+}
+
+func (repo *PostgresRepository) CreateUser() (int64, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+	var id int64
+	if err := repo.db.QueryRowContext(ctx, "INSERT INTO users DEFAULT VALUES RETURNING id").Scan(&id); err != nil {
+		return -1, err
+	}
+	return id, nil
 }

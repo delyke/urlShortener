@@ -77,15 +77,15 @@ func TestHandler_HandleGet(t *testing.T) {
 			if err != nil {
 				log.Fatal("Failed to initialize logger:", err)
 			}
-			r := app.NewRouter(h, l)
-
+			r := app.NewRouter(h, l, cfg, svc)
+			repo.EXPECT().CreateUser().Return(int64(1), nil).AnyTimes()
 			if tt.name == "Redirect to shorted Url" {
 				repo.EXPECT().
 					GetOriginalLink(gomock.Any()).
 					Return("", repository.ErrRecordNotFound)
 
 				repo.EXPECT().
-					Save("https://yandex.com", gomock.Any()).
+					Save("https://yandex.com", gomock.Any(), gomock.Any()).
 					Return("abc123", nil)
 
 				wPost := httptest.NewRecorder()

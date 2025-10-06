@@ -11,6 +11,8 @@ type Config struct {
 	LogLevel        string `env:"LOG_LEVEL"`
 	FileStoragePath string `env:"FILE_STORAGE_PATH"`
 	DatabaseDSN     string `env:"DATABASE_DSN"`
+	AuthCookieName  string `env:"AUTH_COOKIE_NAME"`
+	HMACSecret      string `env:"HMAC_SECRET"`
 }
 
 func GetConfig() (*Config, error) {
@@ -19,6 +21,8 @@ func GetConfig() (*Config, error) {
 	logLevel := flag.String("l", "info", "Log level")
 	fileStoragePath := flag.String("f", "", "File storage path")
 	databaseDSN := flag.String("d", "", "Database DSN")
+	authCookieName := flag.String("c", "Authorization", "Auth cookie name")
+	hmacSecret := flag.String("s", "default-secret", "HMAC secret")
 
 	flag.Parse()
 
@@ -47,6 +51,14 @@ func GetConfig() (*Config, error) {
 
 	if cfg.DatabaseDSN == "" {
 		cfg.DatabaseDSN = *databaseDSN
+	}
+
+	if cfg.AuthCookieName == "" {
+		cfg.AuthCookieName = *authCookieName
+	}
+
+	if cfg.HMACSecret == "" {
+		cfg.HMACSecret = *hmacSecret
 	}
 
 	return &cfg, nil

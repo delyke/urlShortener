@@ -1,8 +1,10 @@
 package handler
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"github.com/delyke/urlShortener/internal/config"
 	"github.com/delyke/urlShortener/internal/model"
 	"github.com/delyke/urlShortener/internal/repository"
@@ -39,7 +41,9 @@ func (h *Handler) HandlePost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	shortedURL, err := h.service.ShortenURL(originalURL)
+	userID, _ := UserIDFormCtx(r.Context())
+
+	shortedURL, err := h.service.ShortenURL(originalURL, userID)
 	if err != nil {
 		if errors.Is(err, service.ErrCanNotCreateURL) {
 			log.Println("URL shortening error:", err)
@@ -73,6 +77,68 @@ func (h *Handler) HandlePost(w http.ResponseWriter, r *http.Request) {
 		log.Println(err)
 		return
 	}
+}
+
+func UserIDFormCtx(ctx context.Context) (int64, bool) {
+	v := ctx.Value("user_id")
+	if v == nil {
+		log.Println("user id not found")
+		return 0, false
+	}
+	id, ok := v.(int64)
+	return id, ok
+}
+
+type respUserURLs struct {
+	ShortURL    string `json:"short_url"`
+	OriginalURL string `json:"original_url"`
+}
+
+func (h *Handler) HandleAPIUserURLs(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	if r.Header.Get("Content-Type") != "application/json" {
+		b, err := json.Marshal(ShortenURLErrorResponse{Error: "Content-Type must be application/json"})
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			log.Println(err)
+			return
+		}
+		w.WriteHeader(http.StatusBadRequest)
+		_, err = w.Write(b)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			log.Println(err)
+			return
+		}
+		return
+	}
+
+	userID, _ := UserIDFormCtx(r.Context())
+	urls, err := h.service.GetURLsByUser(userID)
+	if err != nil {
+		if errors.Is(err, repository.ErrRecordNotFound) {
+			w.WriteHeader(http.StatusNoContent)
+			log.Println(err)
+			return
+		}
+		w.WriteHeader(http.StatusInternalServerError)
+		log.Println(err)
+		return
+	}
+	var resp []respUserURLs
+	for _, url := range *urls {
+		resp = append(resp, respUserURLs{ShortURL: fmt.Sprintf("%s/%s", h.config.BaseAddr, url.ShortURL), OriginalURL: url.OriginalURL})
+	}
+	b, err := json.Marshal(resp)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		log.Println(err)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+	_, _ = w.Write(b)
+	return
 }
 
 func (h *Handler) HandleGet(w http.ResponseWriter, r *http.Request) {
@@ -169,8 +235,8 @@ func (h *Handler) HandleAPIShorten(w http.ResponseWriter, r *http.Request) {
 		log.Printf("URL cannot be empty.")
 		return
 	}
-
-	shortenURL, err := h.service.ShortenURL(request.URL)
+	userID, _ := UserIDFormCtx(r.Context())
+	shortenURL, err := h.service.ShortenURL(request.URL, userID)
 	if err != nil {
 
 		var conflict *repository.ConflictError
@@ -292,8 +358,8 @@ func (h *Handler) HandleAPIShortenBatch(w http.ResponseWriter, r *http.Request) 
 		log.Println(err)
 		return
 	}
-
-	respItems, err := h.service.ShortenBatch(reqItems)
+	userID, _ := UserIDFormCtx(r.Context())
+	respItems, err := h.service.ShortenBatch(reqItems, userID)
 	if err != nil {
 		b, err := json.Marshal(ShortenURLErrorResponse{Error: "Failed to shorten URL"})
 		if err != nil {

@@ -73,7 +73,7 @@ func TestHandler_HandlePost(t *testing.T) {
 					Return("", repository.ErrRecordNotFound)
 
 				repo.EXPECT().
-					Save("https://vk.com", gomock.Any()).
+					Save("https://vk.com", gomock.Any(), gomock.Any()).
 					Return("abc123", nil)
 			}
 

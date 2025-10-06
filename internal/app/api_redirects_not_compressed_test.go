@@ -36,7 +36,7 @@ func TestGzipExpand(t *testing.T) {
 	h := handler.NewHandler(svc, cfg)
 	l, err := logger.Initialize(cfg.LogLevel)
 	require.NoError(t, err)
-	router := NewRouter(h, l)
+	router := NewRouter(h, l, cfg, svc)
 
 	originalURL := "https://vk.com"
 	requestBody := map[string]string{"url": originalURL}
@@ -48,8 +48,10 @@ func TestGzipExpand(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, zw.Close())
 
+	repo.EXPECT().CreateUser().Return(int64(1), nil).AnyTimes()
+
 	repo.EXPECT().
-		Save(originalURL, gomock.Any()).
+		Save(originalURL, gomock.Any(), gomock.Any()).
 		Return("abc123", nil)
 
 	repo.EXPECT().
