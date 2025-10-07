@@ -2,6 +2,7 @@ package handler
 
 import (
 	"bytes"
+	"github.com/delyke/urlShortener/internal/app/appctx"
 	"github.com/delyke/urlShortener/internal/config"
 	"github.com/delyke/urlShortener/internal/mocks"
 	"github.com/delyke/urlShortener/internal/repository"
@@ -79,6 +80,7 @@ func TestHandler_HandleAPIShortenBatch(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			request := httptest.NewRequest(tt.args.method, tt.args.request, bytes.NewReader(tt.args.body))
 			request.Header.Set("Content-Type", tt.args.contentType)
+			request = request.WithContext(appctx.SetUserID(request.Context(), 1))
 			w := httptest.NewRecorder()
 
 			cfg := &config.Config{

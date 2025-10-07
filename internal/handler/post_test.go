@@ -2,6 +2,7 @@ package handler
 
 import (
 	"bytes"
+	"github.com/delyke/urlShortener/internal/app/appctx"
 	"github.com/delyke/urlShortener/internal/config"
 	"github.com/delyke/urlShortener/internal/mocks"
 	"github.com/delyke/urlShortener/internal/repository"
@@ -53,6 +54,7 @@ func TestHandler_HandlePost(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			request := httptest.NewRequest(tt.method, tt.request, bytes.NewReader(tt.body))
+			request = request.WithContext(appctx.SetUserID(request.Context(), 1))
 			w := httptest.NewRecorder()
 			cfg := &config.Config{
 				RunAddr:  ":8080",

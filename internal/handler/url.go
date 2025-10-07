@@ -1,10 +1,10 @@
 package handler
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/delyke/urlShortener/internal/app/appctx"
 	"github.com/delyke/urlShortener/internal/config"
 	"github.com/delyke/urlShortener/internal/model"
 	"github.com/delyke/urlShortener/internal/repository"
@@ -41,7 +41,11 @@ func (h *Handler) HandlePost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userID, _ := UserIDFormCtx(r.Context())
+	userID, ok := appctx.UserID(r.Context())
+	if !ok {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
 
 	shortedURL, err := h.service.ShortenURL(originalURL, userID)
 	if err != nil {
@@ -79,16 +83,6 @@ func (h *Handler) HandlePost(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func UserIDFormCtx(ctx context.Context) (int64, bool) {
-	v := ctx.Value("user_id")
-	if v == nil {
-		log.Println("user id not found")
-		return 0, false
-	}
-	id, ok := v.(int64)
-	return id, ok
-}
-
 type respUserURLs struct {
 	ShortURL    string `json:"short_url"`
 	OriginalURL string `json:"original_url"`
@@ -114,7 +108,11 @@ func (h *Handler) HandleAPIUserURLs(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userID, _ := UserIDFormCtx(r.Context())
+	userID, ok := appctx.UserID(r.Context())
+	if !ok {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
 	urls, err := h.service.GetURLsByUser(userID)
 	if err != nil {
 		if errors.Is(err, repository.ErrRecordNotFound) {
@@ -138,7 +136,6 @@ func (h *Handler) HandleAPIUserURLs(w http.ResponseWriter, r *http.Request) {
 	}
 	w.WriteHeader(http.StatusOK)
 	_, _ = w.Write(b)
-	return
 }
 
 func (h *Handler) HandleGet(w http.ResponseWriter, r *http.Request) {
@@ -235,7 +232,11 @@ func (h *Handler) HandleAPIShorten(w http.ResponseWriter, r *http.Request) {
 		log.Printf("URL cannot be empty.")
 		return
 	}
-	userID, _ := UserIDFormCtx(r.Context())
+	userID, ok := appctx.UserID(r.Context())
+	if !ok {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
 	shortenURL, err := h.service.ShortenURL(request.URL, userID)
 	if err != nil {
 
@@ -358,7 +359,11 @@ func (h *Handler) HandleAPIShortenBatch(w http.ResponseWriter, r *http.Request) 
 		log.Println(err)
 		return
 	}
-	userID, _ := UserIDFormCtx(r.Context())
+	userID, ok := appctx.UserID(r.Context())
+	if !ok {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
 	respItems, err := h.service.ShortenBatch(reqItems, userID)
 	if err != nil {
 		b, err := json.Marshal(ShortenURLErrorResponse{Error: "Failed to shorten URL"})

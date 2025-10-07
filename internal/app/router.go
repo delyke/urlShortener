@@ -2,9 +2,9 @@ package app
 
 import (
 	"compress/gzip"
-	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/delyke/urlShortener/internal/app/appctx"
 	"github.com/delyke/urlShortener/internal/config"
 	"github.com/delyke/urlShortener/internal/handler"
 	"github.com/delyke/urlShortener/internal/logger"
@@ -112,7 +112,7 @@ func authCookieMiddleware(cfg *config.Config, l *logger.Logger, svc *service.URL
 					return
 				}
 				setCookieAndAuthHeader(w, token)
-				r = r.WithContext(context.WithValue(r.Context(), "user_id", uid))
+				r = r.WithContext(appctx.SetUserID(r.Context(), uid))
 				next.ServeHTTP(w, r)
 				return
 			}
@@ -132,7 +132,7 @@ func authCookieMiddleware(cfg *config.Config, l *logger.Logger, svc *service.URL
 					return
 				}
 				setCookieAndAuthHeader(w, token)
-				r = r.WithContext(context.WithValue(r.Context(), "user_id", uid))
+				r = r.WithContext(appctx.SetUserID(r.Context(), uid))
 				next.ServeHTTP(w, r)
 				return
 			}
@@ -141,7 +141,7 @@ func authCookieMiddleware(cfg *config.Config, l *logger.Logger, svc *service.URL
 				writeJSON(w, http.StatusUnauthorized, &ErrorResponse{Error: "not user id in token"})
 				return
 			}
-			r = r.WithContext(context.WithValue(r.Context(), "user_id", claims.UserID))
+			r = r.WithContext(appctx.SetUserID(r.Context(), claims.UserID))
 			next.ServeHTTP(w, r)
 		})
 	}

@@ -56,7 +56,7 @@ func (repo *LocalRepository) GetOriginalLink(shortedURL string) (string, error) 
 	originalURL := ""
 	for _, url := range repo.data.urls {
 		if url.ShortURL == shortedURL {
-			originalURL = url.ShortURL
+			originalURL = url.OriginalURL
 			break
 		}
 	}
@@ -73,14 +73,14 @@ func (repo *LocalRepository) Ping() error {
 func (repo *LocalRepository) SaveBatch(records []model.URL) error {
 	repo.mu.Lock()
 	defer repo.mu.Unlock()
-	for _, record := range records {
-		repo.data.urls = append(repo.data.urls, record)
-	}
+	repo.data.urls = append(repo.data.urls, records...)
 	return nil
 }
 
 func (repo *LocalRepository) GetShortURLByOriginal(originalURL string) (string, error) {
 	var shortURL string
+	repo.mu.Lock()
+	defer repo.mu.Unlock()
 	for _, url := range repo.data.urls {
 		if url.OriginalURL == originalURL {
 			shortURL = url.ShortURL
@@ -107,6 +107,8 @@ func (repo *LocalRepository) CreateUser() (int64, error) {
 
 func (repo *LocalRepository) GetURLsByUserID(userID int64) (*[]model.URL, error) {
 	var urls []model.URL
+	repo.mu.Lock()
+	defer repo.mu.Unlock()
 	for _, url := range repo.data.urls {
 		if url.UserID == userID {
 			urls = append(urls, url)

@@ -1,8 +1,8 @@
 package handler
 
 import (
-	"context"
 	"encoding/json"
+	"github.com/delyke/urlShortener/internal/app/appctx"
 	"github.com/delyke/urlShortener/internal/config"
 	"github.com/delyke/urlShortener/internal/mocks"
 	"github.com/delyke/urlShortener/internal/model"
@@ -14,8 +14,6 @@ import (
 	"net/http/httptest"
 	"testing"
 )
-
-const ctxUserIDKey = "user_id"
 
 func TestHandler_HandleAPIUserURLs_OK(t *testing.T) {
 	cfg := &config.Config{
@@ -46,7 +44,7 @@ func TestHandler_HandleAPIUserURLs_OK(t *testing.T) {
 		Return(urls, nil)
 
 	req := httptest.NewRequest(http.MethodGet, "/api/user/urls", nil)
-	req = req.WithContext(context.WithValue(req.Context(), ctxUserIDKey, uid))
+	req = req.WithContext(appctx.SetUserID(req.Context(), uid))
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
 	hh := http.HandlerFunc(h.HandleAPIUserURLs)
@@ -86,7 +84,7 @@ func TestHandler_HandleAPIUserURLs_NoContent(t *testing.T) {
 		Return(nil, repository.ErrRecordNotFound)
 
 	req := httptest.NewRequest(http.MethodGet, "/api/user/urls", nil)
-	req = req.WithContext(context.WithValue(req.Context(), ctxUserIDKey, uid))
+	req = req.WithContext(appctx.SetUserID(req.Context(), uid))
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
 	hh := http.HandlerFunc(h.HandleAPIUserURLs)
