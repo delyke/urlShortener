@@ -52,9 +52,10 @@ func (repo *PostgresRepository) GetURLsByUserID(userID int64) (*[]model.URL, err
 	defer rows.Close()
 	for rows.Next() {
 		var url model.URL
-		if err := rows.Scan(&url.UUID, &url.ShortURL, &url.OriginalURL, &url.UserID); err != nil {
+		if err := rows.Scan(&url.UUID, &url.OriginalURL, &url.ShortURL, &url.UserID); err != nil {
 			return nil, err
 		}
+		log.Println(url)
 		urls = append(urls, url)
 	}
 	if err := rows.Err(); err != nil {
