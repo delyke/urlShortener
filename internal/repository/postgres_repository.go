@@ -55,7 +55,6 @@ func (repo *PostgresRepository) GetURLsByUserID(userID int64) (*[]model.URL, err
 		if err := rows.Scan(&url.UUID, &url.OriginalURL, &url.ShortURL, &url.UserID); err != nil {
 			return nil, err
 		}
-		log.Println(url)
 		urls = append(urls, url)
 	}
 	if err := rows.Err(); err != nil {
