@@ -98,6 +98,7 @@ func (h *Handler) HandleAPIUserURLs(w http.ResponseWriter, r *http.Request) {
 			log.Println(err)
 			return
 		}
+		log.Println("Content-Type is not application/json", string(b))
 		w.WriteHeader(http.StatusBadRequest)
 		_, err = w.Write(b)
 		if err != nil {
