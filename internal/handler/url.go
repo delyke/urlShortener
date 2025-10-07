@@ -91,24 +91,6 @@ type respUserURLs struct {
 func (h *Handler) HandleAPIUserURLs(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	if r.Header.Get("Content-Type") != "application/json" {
-		b, err := json.Marshal(ShortenURLErrorResponse{Error: "Content-Type must be application/json"})
-		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			log.Println(err)
-			return
-		}
-		log.Println("Content-Type is not application/json", string(b))
-		w.WriteHeader(http.StatusBadRequest)
-		_, err = w.Write(b)
-		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			log.Println(err)
-			return
-		}
-		return
-	}
-
 	userID, ok := appctx.UserID(r.Context())
 	if !ok {
 		w.WriteHeader(http.StatusUnauthorized)
