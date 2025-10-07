@@ -1,2 +1,4 @@
+ALTER TABLE urls DROP CONSTRAINT IF EXISTS fk_urls_user;
+
 ALTER TABLE urls
-DROP COLUMN user_id;
+DROP COLUMN IF EXISTS user_id;
