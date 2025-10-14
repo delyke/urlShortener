@@ -88,7 +88,7 @@ func (repo *LocalRepository) GetOriginalLink(shortedURL string) (string, *bool, 
 	for _, url := range repo.data.urls {
 		if url.ShortURL == shortedURL {
 			originalURL = url.OriginalURL
-			isDeleted = true
+			isDeleted = url.IsDeleted
 			break
 		}
 	}
