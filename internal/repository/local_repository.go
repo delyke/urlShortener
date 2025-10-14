@@ -43,6 +43,7 @@ func (repo *LocalRepository) Save(originalURL string, shortedURL string, userID 
 		OriginalURL: originalURL,
 		ShortURL:    shortedURL,
 		UserID:      userID,
+		IsDeleted:   false,
 	}
 	repo.data.urls = append(repo.data.urls, newURL)
 	return shortedURL, nil

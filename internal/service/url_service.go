@@ -64,16 +64,8 @@ func fanIn[T any](chs ...<-chan T) <-chan T {
 		ch := ch
 		go func(c <-chan T) {
 			defer wg.Done()
-			for {
-				select {
-				case v, ok := <-c:
-					if !ok {
-						return
-					}
-					select {
-					case out <- v:
-					}
-				}
+			for v := range c {
+				out <- v
 			}
 		}(ch)
 	}
