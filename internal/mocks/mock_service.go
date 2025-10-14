@@ -49,13 +49,28 @@ func (mr *MockURLRepositoryMockRecorder) CreateUser() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateUser", reflect.TypeOf((*MockURLRepository)(nil).CreateUser))
 }
 
+// DeleteURLsByUser mocks base method.
+func (m *MockURLRepository) DeleteURLsByUser(userID int64, URLs []string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteURLsByUser", userID, URLs)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteURLsByUser indicates an expected call of DeleteURLsByUser.
+func (mr *MockURLRepositoryMockRecorder) DeleteURLsByUser(userID, URLs interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteURLsByUser", reflect.TypeOf((*MockURLRepository)(nil).DeleteURLsByUser), userID, URLs)
+}
+
 // GetOriginalLink mocks base method.
-func (m *MockURLRepository) GetOriginalLink(shortedURL string) (string, error) {
+func (m *MockURLRepository) GetOriginalLink(shortedURL string) (string, *bool, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetOriginalLink", shortedURL)
 	ret0, _ := ret[0].(string)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
+	ret1, _ := ret[1].(*bool)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
 }
 
 // GetOriginalLink indicates an expected call of GetOriginalLink.

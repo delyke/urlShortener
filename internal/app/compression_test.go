@@ -14,6 +14,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 )
 
 func TestCompression(t *testing.T) {
@@ -116,7 +117,7 @@ func TestCompression(t *testing.T) {
 
 			repo := mocks.NewMockURLRepository(ctrl)
 			repo.EXPECT().CreateUser().Return(int64(1), nil).AnyTimes()
-			svc := service.NewURLService(repo, cfg)
+			svc := service.NewURLService(repo, cfg, 5*time.Second, 100)
 			h := handler.NewHandler(svc, cfg)
 			l, err := logger.Initialize(cfg.LogLevel)
 			if err != nil {

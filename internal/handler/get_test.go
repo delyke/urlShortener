@@ -17,6 +17,7 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestHandler_HandleGet(t *testing.T) {
@@ -50,6 +51,15 @@ func TestHandler_HandleGet(t *testing.T) {
 			},
 		},
 		{
+			name:    "Deleted url",
+			request: `/she4894t`,
+			method:  http.MethodGet,
+			want: want{
+				code:        http.StatusGone,
+				contentType: "",
+			},
+		},
+		{
 			name:    "Redirect to shorted Url",
 			request: `/`,
 			method:  http.MethodGet,
@@ -70,7 +80,7 @@ func TestHandler_HandleGet(t *testing.T) {
 			defer ctrl.Finish()
 
 			repo := mocks.NewMockURLRepository(ctrl)
-			svc := service.NewURLService(repo, cfg)
+			svc := service.NewURLService(repo, cfg, 5*time.Second, 100)
 			h := handler.NewHandler(svc, cfg)
 
 			l, err := logger.Initialize(cfg.LogLevel)
@@ -82,7 +92,7 @@ func TestHandler_HandleGet(t *testing.T) {
 			if tt.name == "Redirect to shorted Url" {
 				repo.EXPECT().
 					GetOriginalLink(gomock.Any()).
-					Return("", repository.ErrRecordNotFound)
+					Return("", nil, repository.ErrRecordNotFound)
 
 				repo.EXPECT().
 					Save("https://yandex.com", gomock.Any(), gomock.Any()).
@@ -95,9 +105,35 @@ func TestHandler_HandleGet(t *testing.T) {
 				body, _ := io.ReadAll(postResult.Body)
 				postResult.Body.Close()
 				tt.request = strings.TrimPrefix(string(body), "http://localhost:8080/")
+
+				isDeleted := false
+
 				repo.EXPECT().
 					GetOriginalLink(gomock.Any()).
-					Return("https://yandex.com", nil)
+					Return("https://yandex.com", &isDeleted, nil)
+			}
+			if tt.name == "Deleted url" {
+				repo.EXPECT().
+					GetOriginalLink(gomock.Any()).
+					Return("", nil, repository.ErrRecordNotFound)
+
+				repo.EXPECT().
+					Save("https://yandex.com", gomock.Any(), gomock.Any()).
+					Return("abc123", nil)
+
+				wPost := httptest.NewRecorder()
+				postRequest := httptest.NewRequest("POST", "/", bytes.NewReader([]byte("https://yandex.com")))
+				r.ServeHTTP(wPost, postRequest)
+				postResult := wPost.Result()
+				body, _ := io.ReadAll(postResult.Body)
+				postResult.Body.Close()
+				tt.request = strings.TrimPrefix(string(body), "http://localhost:8080/")
+
+				isDeleted := true
+
+				repo.EXPECT().
+					GetOriginalLink(gomock.Any()).
+					Return("https://yandex.com", &isDeleted, nil)
 			}
 			w := httptest.NewRecorder()
 			request := httptest.NewRequest(tt.method, "/"+tt.request, nil)

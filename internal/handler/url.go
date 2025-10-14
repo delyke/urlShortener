@@ -83,6 +83,55 @@ func (h *Handler) HandlePost(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func (h *Handler) HandleAPIUserURLsDelete(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	if r.Header.Get("Content-Type") != "application/json" {
+		b, err := json.Marshal(ShortenURLErrorResponse{Error: "Content-Type must be application/json"})
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			log.Println(err)
+			return
+		}
+		w.WriteHeader(http.StatusBadRequest)
+		_, err = w.Write(b)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			log.Println(err)
+			return
+		}
+		return
+	}
+
+	userID, ok := appctx.UserID(r.Context())
+	if !ok {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+
+	var ids []string
+	if err := json.NewDecoder(r.Body).Decode(&ids); err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		log.Fatal(err)
+		return
+	}
+
+	if len(ids) == 0 {
+		w.WriteHeader(http.StatusBadRequest)
+		log.Println("delete ids len = 0")
+		return
+	}
+
+	err := h.service.EnqueueDelete(userID, ids)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		log.Printf("Enqueue Delete error: %v", err)
+		return
+	}
+
+	w.WriteHeader(http.StatusAccepted)
+}
+
 type respUserURLs struct {
 	ShortURL    string `json:"short_url"`
 	OriginalURL string `json:"original_url"`
@@ -123,8 +172,12 @@ func (h *Handler) HandleAPIUserURLs(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) HandleGet(w http.ResponseWriter, r *http.Request) {
 	shortedURL := chi.URLParam(r, "shortURL")
-	originalURL, err := h.service.GetOriginalURL(shortedURL)
+	originalURL, isDeleted, err := h.service.GetOriginalURL(shortedURL)
 	if err == nil {
+		if *isDeleted {
+			w.WriteHeader(http.StatusGone)
+			return
+		}
 		http.Redirect(w, r, originalURL, http.StatusTemporaryRedirect)
 		return
 	} else {

@@ -5,4 +5,5 @@ type URL struct {
 	OriginalURL string `json:"original_url"`
 	ShortURL    string `json:"short_url"`
 	UserID      int64  `json:"user_id"`
+	IsDeleted   bool   `json:"is_deleted"`
 }

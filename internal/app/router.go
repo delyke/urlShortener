@@ -29,6 +29,7 @@ func NewRouter(h *handler.Handler, l *logger.Logger, cfg *config.Config, svc *se
 		r.Post("/api/shorten/batch", h.HandleAPIShortenBatch)
 		r.Get("/ping", h.HandlePing)
 		r.Get("/api/user/urls", h.HandleAPIUserURLs)
+		r.Delete("/api/user/urls", h.HandleAPIUserURLsDelete)
 	})
 	return r
 }

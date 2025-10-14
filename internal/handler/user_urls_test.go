@@ -13,6 +13,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 )
 
 func TestHandler_HandleAPIUserURLs_OK(t *testing.T) {
@@ -26,7 +27,7 @@ func TestHandler_HandleAPIUserURLs_OK(t *testing.T) {
 	defer ctrl.Finish()
 
 	repo := mocks.NewMockURLRepository(ctrl)
-	svc := service.NewURLService(repo, cfg)
+	svc := service.NewURLService(repo, cfg, 5*time.Second, 100)
 	h := NewHandler(svc, cfg)
 
 	const uid int64 = 1
@@ -74,7 +75,7 @@ func TestHandler_HandleAPIUserURLs_NoContent(t *testing.T) {
 	defer ctrl.Finish()
 
 	repo := mocks.NewMockURLRepository(ctrl)
-	svc := service.NewURLService(repo, cfg)
+	svc := service.NewURLService(repo, cfg, 5*time.Second, 100)
 	h := NewHandler(svc, cfg)
 
 	const uid int64 = 1

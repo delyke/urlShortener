@@ -3,6 +3,7 @@ package repository
 import (
 	"errors"
 	"github.com/delyke/urlShortener/internal/model"
+	"log"
 	"sync"
 	"time"
 )
@@ -49,21 +50,51 @@ func (repo *LocalRepository) Save(originalURL string, shortedURL string, userID 
 
 var ErrRecordNotFound = errors.New("record not found")
 
-func (repo *LocalRepository) GetOriginalLink(shortedURL string) (string, error) {
+func (repo *LocalRepository) DeleteURLsByUser(userID int64, URLs []string) error {
+	repo.mu.Lock()
+	defer repo.mu.Unlock()
+	if len(URLs) == 0 {
+		return nil
+	}
+
+	toDelete := make(map[string]struct{}, len(URLs))
+	for _, u := range URLs {
+		if u == "" {
+			continue
+		}
+		toDelete[u] = struct{}{}
+	}
+
+	var touched int
+	for i := range repo.data.urls {
+		u := &repo.data.urls[i]
+		if u.UserID == userID {
+			u.IsDeleted = true
+			touched++
+		}
+	}
+
+	log.Printf("[soft delete][file] user=%d, updated=%d", userID, touched)
+	return nil
+}
+
+func (repo *LocalRepository) GetOriginalLink(shortedURL string) (string, *bool, error) {
 	repo.mu.Lock()
 	defer repo.mu.Unlock()
 
 	originalURL := ""
+	var isDeleted bool
 	for _, url := range repo.data.urls {
 		if url.ShortURL == shortedURL {
 			originalURL = url.OriginalURL
+			isDeleted = true
 			break
 		}
 	}
 	if originalURL == "" {
-		return "", ErrRecordNotFound
+		return "", nil, ErrRecordNotFound
 	}
-	return originalURL, nil
+	return originalURL, &isDeleted, nil
 }
 
 func (repo *LocalRepository) Ping() error {

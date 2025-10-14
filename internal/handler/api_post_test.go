@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 )
 
 func TestHandler_HandleApiShorten(t *testing.T) {
@@ -90,14 +91,14 @@ func TestHandler_HandleApiShorten(t *testing.T) {
 			defer ctrl.Finish()
 
 			repo := mocks.NewMockURLRepository(ctrl)
-			svc := service.NewURLService(repo, cfg)
+			svc := service.NewURLService(repo, cfg, 5*time.Second, 100)
 
 			h := NewHandler(svc, cfg)
 
 			if tt.name == "Api Post Shorten Success" {
 				repo.EXPECT().
 					GetOriginalLink(gomock.Any()).
-					Return("", repository.ErrRecordNotFound)
+					Return("", nil, repository.ErrRecordNotFound)
 
 				repo.EXPECT().
 					Save("http://www.google.com", gomock.Any(), gomock.Any()).

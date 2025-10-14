@@ -9,6 +9,7 @@ import (
 	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v5/pgconn"
 	_ "github.com/jackc/pgx/v5/stdlib"
+	"github.com/lib/pq"
 	"log"
 	"time"
 )
@@ -40,6 +41,22 @@ func NewConflictError(shortURL string) error {
 	return &ConflictError{ShortURL: shortURL}
 }
 
+func (repo *PostgresRepository) DeleteURLsByUser(userID int64, URLs []string) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	query := `UPDATE urls SET is_deleted = TRUE WHERE user_id = $1 AND short_url = ANY($2)`
+	result, err := repo.db.ExecContext(ctx, query, userID, pq.Array(URLs))
+	if err != nil {
+		return err
+	}
+	n, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	log.Printf("deleted %d urls, user ID: %d", n, userID)
+	return nil
+}
+
 func (repo *PostgresRepository) GetURLsByUserID(userID int64) (*[]model.URL, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
@@ -52,7 +69,7 @@ func (repo *PostgresRepository) GetURLsByUserID(userID int64) (*[]model.URL, err
 	defer rows.Close()
 	for rows.Next() {
 		var url model.URL
-		if err := rows.Scan(&url.UUID, &url.OriginalURL, &url.ShortURL, &url.UserID); err != nil {
+		if err := rows.Scan(&url.UUID, &url.OriginalURL, &url.ShortURL, &url.UserID, &url.IsDeleted); err != nil {
 			return nil, err
 		}
 		urls = append(urls, url)
@@ -124,20 +141,21 @@ func (repo *PostgresRepository) GetShortURLByOriginal(originalURL string) (strin
 	return shortedURL, nil
 }
 
-func (repo *PostgresRepository) GetOriginalLink(shortedURL string) (string, error) {
+func (repo *PostgresRepository) GetOriginalLink(shortedURL string) (string, *bool, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
 
 	var originalURL string
-	err := repo.db.QueryRowContext(ctx, "SELECT original_url FROM urls WHERE short_url = $1", shortedURL).Scan(&originalURL)
+	var isDeleted bool
+	err := repo.db.QueryRowContext(ctx, "SELECT original_url, is_deleted FROM urls WHERE short_url = $1", shortedURL).Scan(&originalURL, &isDeleted)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return "", ErrRecordNotFound
+			return "", nil, ErrRecordNotFound
 		} else {
-			return "", err
+			return "", nil, err
 		}
 	}
-	return originalURL, nil
+	return originalURL, &isDeleted, nil
 }
 
 func (repo *PostgresRepository) SaveBatch(records []model.URL) error {

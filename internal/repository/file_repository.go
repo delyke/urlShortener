@@ -71,6 +71,44 @@ func (c *Consumer) Close() error {
 	return c.file.Close()
 }
 
+func (repo *FileRepository) DeleteURLsByUser(userID int64, URLs []string) error {
+	if len(URLs) == 0 {
+		return nil
+	}
+	producer, err := newProducer(repo.filename)
+	if err != nil {
+		return err
+	}
+
+	toDelete := make(map[string]struct{}, len(URLs))
+	for _, u := range URLs {
+		if u == "" {
+			continue
+		}
+		toDelete[u] = struct{}{}
+	}
+
+	var touched int
+	for i := range repo.urls {
+		u := &repo.urls[i]
+		if u.UserID == userID {
+			u.IsDeleted = true
+			touched++
+		}
+	}
+
+	if touched == 0 {
+		return nil
+	}
+
+	producer.encoder.SetIndent("", "\t")
+	if err := producer.encoder.Encode(repo.urls); err != nil {
+		return err
+	}
+	log.Printf("[soft delete][file] user=%d, updated=%d", userID, touched)
+	return nil
+}
+
 func (repo *FileRepository) Save(originalURL string, shortedURL string, userID int64) (string, error) {
 	for _, u := range repo.urls {
 		if u.OriginalURL == originalURL {
@@ -93,6 +131,7 @@ func (repo *FileRepository) Save(originalURL string, shortedURL string, userID i
 		OriginalURL: originalURL,
 		ShortURL:    shortedURL,
 		UserID:      userID,
+		IsDeleted:   false,
 	}
 	repo.urls = append(repo.urls, url)
 
@@ -104,13 +143,13 @@ func (repo *FileRepository) Save(originalURL string, shortedURL string, userID i
 	return shortedURL, nil
 }
 
-func (repo *FileRepository) GetOriginalLink(shortedURL string) (string, error) {
+func (repo *FileRepository) GetOriginalLink(shortedURL string) (string, *bool, error) {
 	for _, url := range repo.urls {
 		if url.ShortURL == shortedURL {
-			return url.OriginalURL, nil
+			return url.OriginalURL, &url.IsDeleted, nil
 		}
 	}
-	return "", ErrRecordNotFound
+	return "", nil, ErrRecordNotFound
 }
 
 func (repo *FileRepository) generateUUID() (string, error) {

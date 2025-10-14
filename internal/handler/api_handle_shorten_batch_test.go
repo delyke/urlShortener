@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 )
 
 func TestHandler_HandleAPIShortenBatch(t *testing.T) {
@@ -93,13 +94,13 @@ func TestHandler_HandleAPIShortenBatch(t *testing.T) {
 			defer ctrl.Finish()
 
 			repo := mocks.NewMockURLRepository(ctrl)
-			svc := service.NewURLService(repo, cfg)
+			svc := service.NewURLService(repo, cfg, 5*time.Second, 100)
 			h := NewHandler(svc, cfg)
 
 			if tt.name == "Batch Post Success" {
 				repo.EXPECT().
 					GetOriginalLink(gomock.Any()).
-					Return("", repository.ErrRecordNotFound).
+					Return("", nil, repository.ErrRecordNotFound).
 					AnyTimes()
 
 				repo.EXPECT().
