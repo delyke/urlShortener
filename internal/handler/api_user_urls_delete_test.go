@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"github.com/delyke/urlShortener/internal/app/appctx"
 	"github.com/delyke/urlShortener/internal/config"
+	"github.com/delyke/urlShortener/internal/logger"
 	"github.com/delyke/urlShortener/internal/mocks"
 	"github.com/delyke/urlShortener/internal/service"
 	"github.com/golang/mock/gomock"
@@ -26,7 +27,12 @@ func newTestSvc(t *testing.T, cfg *config.Config, delTimeout time.Duration, bufL
 func TestHandleAPIUserURLsDelete_OK(t *testing.T) {
 	cfg := &config.Config{BaseAddr: "http://localhost:8080"}
 	svc := newTestSvc(t, cfg, 200*time.Millisecond, 10) // буфер есть → не блокируемся
-	h := NewHandler(svc, cfg)
+	l, err := logger.Initialize(cfg.LogLevel)
+	if err != nil {
+		t.Errorf("Failed to initialize logger: %v", err)
+		return
+	}
+	h := NewHandler(svc, cfg, l)
 
 	body, _ := json.Marshal([]string{"a1", "b2", "c3"})
 	req := httptest.NewRequest(http.MethodDelete, "/api/user/urls", bytes.NewReader(body))
@@ -46,7 +52,12 @@ func TestHandleAPIUserURLsDelete_OK(t *testing.T) {
 func TestHandleAPIUserURLsDelete_BadContentType(t *testing.T) {
 	cfg := &config.Config{}
 	svc := newTestSvc(t, cfg, 200*time.Millisecond, 10)
-	h := NewHandler(svc, cfg)
+	l, err := logger.Initialize(cfg.LogLevel)
+	if err != nil {
+		t.Errorf("Failed to initialize logger: %v", err)
+		return
+	}
+	h := NewHandler(svc, cfg, l)
 
 	body, _ := json.Marshal([]string{"a1"})
 	req := httptest.NewRequest(http.MethodDelete, "/api/user/urls", bytes.NewReader(body))
@@ -68,7 +79,12 @@ func TestHandleAPIUserURLsDelete_BadContentType(t *testing.T) {
 func TestHandleAPIUserURLsDelete_Unauthorized_NoUser(t *testing.T) {
 	cfg := &config.Config{}
 	svc := newTestSvc(t, cfg, 200*time.Millisecond, 10)
-	h := NewHandler(svc, cfg)
+	l, err := logger.Initialize(cfg.LogLevel)
+	if err != nil {
+		t.Errorf("Failed to initialize logger: %v", err)
+		return
+	}
+	h := NewHandler(svc, cfg, l)
 
 	body, _ := json.Marshal([]string{"a1"})
 	req := httptest.NewRequest(http.MethodDelete, "/api/user/urls", bytes.NewReader(body))
@@ -85,7 +101,12 @@ func TestHandleAPIUserURLsDelete_Unauthorized_NoUser(t *testing.T) {
 func TestHandleAPIUserURLsDelete_EmptyIDs(t *testing.T) {
 	cfg := &config.Config{}
 	svc := newTestSvc(t, cfg, 200*time.Millisecond, 10)
-	h := NewHandler(svc, cfg)
+	l, err := logger.Initialize(cfg.LogLevel)
+	if err != nil {
+		t.Errorf("Failed to initialize logger: %v", err)
+		return
+	}
+	h := NewHandler(svc, cfg, l)
 
 	body := []byte(`[]`)
 	req := httptest.NewRequest(http.MethodDelete, "/api/user/urls", bytes.NewReader(body))
@@ -104,7 +125,12 @@ func TestHandleAPIUserURLsDelete_EmptyIDs(t *testing.T) {
 func TestHandleAPIUserURLsDelete_EnqueueTimeout(t *testing.T) {
 	cfg := &config.Config{}
 	svc := newTestSvc(t, cfg, 10*time.Millisecond, 0)
-	h := NewHandler(svc, cfg)
+	l, err := logger.Initialize(cfg.LogLevel)
+	if err != nil {
+		t.Errorf("Failed to initialize logger: %v", err)
+		return
+	}
+	h := NewHandler(svc, cfg, l)
 
 	body, _ := json.Marshal([]string{"x"})
 	req := httptest.NewRequest(http.MethodDelete, "/api/user/urls", bytes.NewReader(body))

@@ -4,12 +4,14 @@ import (
 	"encoding/json"
 	"github.com/delyke/urlShortener/internal/app/appctx"
 	"github.com/delyke/urlShortener/internal/config"
+	"github.com/delyke/urlShortener/internal/logger"
 	"github.com/delyke/urlShortener/internal/mocks"
 	"github.com/delyke/urlShortener/internal/model"
 	"github.com/delyke/urlShortener/internal/repository"
 	"github.com/delyke/urlShortener/internal/service"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
+	"log"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -28,7 +30,11 @@ func TestHandler_HandleAPIUserURLs_OK(t *testing.T) {
 
 	repo := mocks.NewMockURLRepository(ctrl)
 	svc := service.NewURLService(repo, cfg, 5*time.Second, 100)
-	h := NewHandler(svc, cfg)
+	l, err := logger.Initialize(cfg.LogLevel)
+	if err != nil {
+		log.Fatal("Failed to initialize logger:", err)
+	}
+	h := NewHandler(svc, cfg, l)
 
 	const uid int64 = 1
 
@@ -76,7 +82,11 @@ func TestHandler_HandleAPIUserURLs_NoContent(t *testing.T) {
 
 	repo := mocks.NewMockURLRepository(ctrl)
 	svc := service.NewURLService(repo, cfg, 5*time.Second, 100)
-	h := NewHandler(svc, cfg)
+	l, err := logger.Initialize(cfg.LogLevel)
+	if err != nil {
+		log.Fatal("Failed to initialize logger:", err)
+	}
+	h := NewHandler(svc, cfg, l)
 
 	const uid int64 = 1
 

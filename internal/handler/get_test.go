@@ -81,12 +81,11 @@ func TestHandler_HandleGet(t *testing.T) {
 
 			repo := mocks.NewMockURLRepository(ctrl)
 			svc := service.NewURLService(repo, cfg, 5*time.Second, 100)
-			h := handler.NewHandler(svc, cfg)
-
 			l, err := logger.Initialize(cfg.LogLevel)
 			if err != nil {
 				log.Fatal("Failed to initialize logger:", err)
 			}
+			h := handler.NewHandler(svc, cfg, l)
 			r := app.NewRouter(h, l, cfg, svc)
 			repo.EXPECT().CreateUser().Return(int64(1), nil).AnyTimes()
 			if tt.name == "Redirect to shorted Url" {

@@ -118,12 +118,13 @@ func TestCompression(t *testing.T) {
 			repo := mocks.NewMockURLRepository(ctrl)
 			repo.EXPECT().CreateUser().Return(int64(1), nil).AnyTimes()
 			svc := service.NewURLService(repo, cfg, 5*time.Second, 100)
-			h := handler.NewHandler(svc, cfg)
+
 			l, err := logger.Initialize(cfg.LogLevel)
 			if err != nil {
 				t.Errorf("Failed to initialize logger: %v", err)
 				return
 			}
+			h := handler.NewHandler(svc, cfg, l)
 			r := NewRouter(h, l, cfg, svc)
 			r.ServeHTTP(w, request)
 

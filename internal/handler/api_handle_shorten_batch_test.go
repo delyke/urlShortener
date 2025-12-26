@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"github.com/delyke/urlShortener/internal/app/appctx"
 	"github.com/delyke/urlShortener/internal/config"
+	"github.com/delyke/urlShortener/internal/logger"
 	"github.com/delyke/urlShortener/internal/mocks"
 	"github.com/delyke/urlShortener/internal/repository"
 	"github.com/delyke/urlShortener/internal/service"
@@ -95,7 +96,12 @@ func TestHandler_HandleAPIShortenBatch(t *testing.T) {
 
 			repo := mocks.NewMockURLRepository(ctrl)
 			svc := service.NewURLService(repo, cfg, 5*time.Second, 100)
-			h := NewHandler(svc, cfg)
+			l, err := logger.Initialize(cfg.LogLevel)
+			if err != nil {
+				t.Errorf("Failed to initialize logger: %v", err)
+				return
+			}
+			h := NewHandler(svc, cfg, l)
 
 			if tt.name == "Batch Post Success" {
 				repo.EXPECT().

@@ -34,9 +34,9 @@ func TestGzipExpand(t *testing.T) {
 	repo := mocks.NewMockURLRepository(ctrl)
 
 	svc := service.NewURLService(repo, cfg, 5*time.Second, 100)
-	h := handler.NewHandler(svc, cfg)
 	l, err := logger.Initialize(cfg.LogLevel)
 	require.NoError(t, err)
+	h := handler.NewHandler(svc, cfg, l)
 	router := NewRouter(h, l, cfg, svc)
 
 	originalURL := "https://vk.com"
