@@ -2,9 +2,13 @@ package appctx
 
 import "context"
 
-type userIDKeyType struct{}
+type contextKey int
 
-var userIDKey = userIDKeyType{}
+const (
+	userIDContextKey contextKey = iota + 1
+)
+
+var userIDKey = userIDContextKey
 
 func SetUserID(ctx context.Context, uid int64) context.Context {
 	return context.WithValue(ctx, userIDKey, uid)

@@ -57,7 +57,7 @@ func (s *URLService) StopDeleter() {
 }
 
 func fanIn[T any](chs ...<-chan T) <-chan T {
-	out := make(chan T)
+	out := make(chan T, len(chs))
 	var wg sync.WaitGroup
 	wg.Add(len(chs))
 	for _, ch := range chs {

@@ -40,7 +40,7 @@ func main() {
 	svc := service.NewURLService(repo, cfg, 10*time.Second, 100)
 	svc.StartDeleter()
 	defer svc.StopDeleter()
-	h := handler.NewHandler(svc, cfg)
+	h := handler.NewHandler(svc, cfg, l)
 	l.Info("Running server on", cfg.RunAddr)
 
 	err = http.ListenAndServe(cfg.RunAddr, app.NewRouter(h, l, cfg, svc))

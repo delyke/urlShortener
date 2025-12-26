@@ -51,30 +51,6 @@ func authCookieMiddleware(cfg *config.Config, l *logger.Logger, svc *service.URL
 
 	secret := cfg.HMACSecret
 
-	sign := func(uid int64) (string, error) {
-		claims := Claims{
-			RegisteredClaims: jwt.RegisteredClaims{
-				ExpiresAt: jwt.NewNumericDate(time.Now().Add(24 * time.Hour)),
-				IssuedAt:  jwt.NewNumericDate(time.Now()),
-			},
-			UserID: uid,
-		}
-		t := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-		return t.SignedString([]byte(secret))
-	}
-
-	parse := func(tokenString string) (*Claims, *jwt.Token, error) {
-		claims := &Claims{}
-		token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
-			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-				l.Warnf("Unexpected signing method: %v", token.Header["alg"])
-				return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
-			}
-			return []byte(secret), nil
-		})
-		return claims, token, err
-	}
-
 	setCookieAndAuthHeader := func(w http.ResponseWriter, token string) {
 		http.SetCookie(w, &http.Cookie{
 			Name:     cookieName,
@@ -106,7 +82,7 @@ func authCookieMiddleware(cfg *config.Config, l *logger.Logger, svc *service.URL
 					writeJSON(w, http.StatusInternalServerError, &ErrorResponse{Error: "failed to create user"})
 					return
 				}
-				token, err := sign(uid)
+				token, err := sign(uid, secret)
 				if err != nil {
 					l.Errorf("Error signing user: %v", err)
 					writeJSON(w, http.StatusInternalServerError, &ErrorResponse{Error: "failed to sign user"})
@@ -118,7 +94,7 @@ func authCookieMiddleware(cfg *config.Config, l *logger.Logger, svc *service.URL
 				return
 			}
 
-			claims, parsed, err := parse(tokenString)
+			claims, parsed, err := parse(tokenString, secret)
 			if err != nil || !parsed.Valid {
 				uid, err := svc.CreateUser()
 				if err != nil {
@@ -126,7 +102,7 @@ func authCookieMiddleware(cfg *config.Config, l *logger.Logger, svc *service.URL
 					writeJSON(w, http.StatusInternalServerError, &ErrorResponse{Error: "failed to create user"})
 					return
 				}
-				token, err := sign(uid)
+				token, err := sign(uid, secret)
 				if err != nil {
 					l.Errorf("Error signing user: %v", err)
 					writeJSON(w, http.StatusInternalServerError, &ErrorResponse{Error: "failed to sign user"})
@@ -146,6 +122,29 @@ func authCookieMiddleware(cfg *config.Config, l *logger.Logger, svc *service.URL
 			next.ServeHTTP(w, r)
 		})
 	}
+}
+
+func sign(uid int64, secret string) (string, error) {
+	claims := Claims{
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(24 * time.Hour)),
+			IssuedAt:  jwt.NewNumericDate(time.Now()),
+		},
+		UserID: uid,
+	}
+	t := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	return t.SignedString([]byte(secret))
+}
+
+func parse(tokenString string, secret string) (*Claims, *jwt.Token, error) {
+	claims := &Claims{}
+	token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+		}
+		return []byte(secret), nil
+	})
+	return claims, token, err
 }
 
 func gzipMiddleware(next http.Handler) http.Handler {
