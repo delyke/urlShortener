@@ -13,6 +13,8 @@ type Config struct {
 	DatabaseDSN     string `env:"DATABASE_DSN"`
 	AuthCookieName  string `env:"AUTH_COOKIE_NAME"`
 	HMACSecret      string `env:"HMAC_SECRET"`
+	AuditFile       string `env:"AUDIT_FILE"`
+	AuditURL        string `env:"AUDIT_URL"`
 }
 
 func GetConfig() (*Config, error) {
@@ -23,6 +25,8 @@ func GetConfig() (*Config, error) {
 	databaseDSN := flag.String("d", "", "Database DSN")
 	authCookieName := flag.String("c", "Authorization", "Auth cookie name")
 	hmacSecret := flag.String("s", "default-secret", "HMAC secret")
+	auditFile := flag.String("audit-file", "", "Audit file path")
+	auditURL := flag.String("audit-url", "", "Audit server URL")
 
 	flag.Parse()
 
@@ -59,6 +63,14 @@ func GetConfig() (*Config, error) {
 
 	if cfg.HMACSecret == "" {
 		cfg.HMACSecret = *hmacSecret
+	}
+
+	if cfg.AuditFile == "" {
+		cfg.AuditFile = *auditFile
+	}
+
+	if cfg.AuditURL == "" {
+		cfg.AuditURL = *auditURL
 	}
 
 	return &cfg, nil

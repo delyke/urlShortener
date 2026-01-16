@@ -1,6 +1,10 @@
 package handler
 
-import "github.com/delyke/urlShortener/internal/model"
+import (
+	"context"
+	"github.com/delyke/urlShortener/internal/audit"
+	"github.com/delyke/urlShortener/internal/model"
+)
 
 type ShortenURLService interface {
 	ShortenURL(originalURL string, userID int64) (string, error)
@@ -10,4 +14,5 @@ type ShortenURLService interface {
 	GetFreeShortURL() (string, error)
 	GetURLsByUser(userID int64) (*[]model.URL, error)
 	EnqueueDelete(userID int64, URLs []string) error
+	NotifyAudit(ctx context.Context, event audit.Event) error
 }

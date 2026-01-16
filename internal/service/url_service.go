@@ -1,9 +1,11 @@
 package service
 
 import (
+	"context"
 	"crypto/rand"
 	"encoding/base64"
 	"errors"
+	"github.com/delyke/urlShortener/internal/audit"
 	"github.com/delyke/urlShortener/internal/config"
 	"github.com/delyke/urlShortener/internal/model"
 	"github.com/delyke/urlShortener/internal/repository"
@@ -22,6 +24,8 @@ type URLService struct {
 	wg         sync.WaitGroup
 	batchMax   int
 	stopCh     chan struct{}
+	observers  []audit.Observer
+	obsMu      sync.RWMutex
 }
 
 func NewURLService(repo repository.URLRepository, config *config.Config, delTimeout time.Duration, bufLen int) *URLService {
@@ -35,6 +39,7 @@ func NewURLService(repo repository.URLRepository, config *config.Config, delTime
 		delURLCh:   make(chan DeleteUserURLs, bufLen),
 		batchMax:   1000,
 		batchInt:   time.Second * 5,
+		stopCh:     make(chan struct{}),
 	}
 }
 
@@ -54,6 +59,29 @@ func (s *URLService) StartDeleter() {
 func (s *URLService) StopDeleter() {
 	close(s.stopCh)
 	s.wg.Wait()
+}
+
+func (s *URLService) RegisterAuditObserver(observer audit.Observer) {
+	if observer == nil {
+		return
+	}
+	s.obsMu.Lock()
+	defer s.obsMu.Unlock()
+	s.observers = append(s.observers, observer)
+}
+
+func (s *URLService) NotifyAudit(ctx context.Context, event audit.Event) error {
+	s.obsMu.RLock()
+	observers := append([]audit.Observer(nil), s.observers...)
+	s.obsMu.RUnlock()
+
+	var errs []error
+	for _, observer := range observers {
+		if err := observer.OnEvent(ctx, event); err != nil {
+			errs = append(errs, err)
+		}
+	}
+	return errors.Join(errs...)
 }
 
 func fanIn[T any](chs ...<-chan T) <-chan T {
@@ -187,7 +215,6 @@ func (s *URLService) ShortenURL(originalURL string, userID int64) (string, error
 }
 
 func (s *URLService) GetOriginalURL(shortenURL string) (string, *bool, error) {
-	log.Println("GetOriginalURL: ", shortenURL)
 	url, isDeleted, err := s.repo.GetOriginalLink(shortenURL)
 	if err != nil {
 		if errors.Is(err, repository.ErrRecordNotFound) {

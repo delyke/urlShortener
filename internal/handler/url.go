@@ -1,10 +1,12 @@
 package handler
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/delyke/urlShortener/internal/app/appctx"
+	"github.com/delyke/urlShortener/internal/audit"
 	"github.com/delyke/urlShortener/internal/config"
 	"github.com/delyke/urlShortener/internal/logger"
 	"github.com/delyke/urlShortener/internal/model"
@@ -15,7 +17,9 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
+	"time"
 )
 
 type Handler struct {
@@ -26,6 +30,20 @@ type Handler struct {
 
 func NewHandler(service ShortenURLService, cfg *config.Config, l *logger.Logger) *Handler {
 	return &Handler{service: service, config: cfg, l: l}
+}
+
+func (h *Handler) sendAuditEvent(ctx context.Context, action string, userID int64, hasUser bool, originalURL string) {
+	event := audit.Event{
+		TS:     time.Now().Unix(),
+		Action: action,
+		URL:    originalURL,
+	}
+	if hasUser {
+		event.UserID = strconv.FormatInt(userID, 10)
+	}
+	if err := h.service.NotifyAudit(ctx, event); err != nil {
+		h.l.Errorf("failed to notify audit event: %v", err)
+	}
 }
 
 func (h *Handler) HandlePost(w http.ResponseWriter, r *http.Request) {
@@ -83,6 +101,7 @@ func (h *Handler) HandlePost(w http.ResponseWriter, r *http.Request) {
 		h.l.Errorf("failed to write body: %v", err)
 		return
 	}
+	h.sendAuditEvent(r.Context(), "shorten", userID, true, originalURL)
 }
 
 func (h *Handler) HandleAPIUserURLsDelete(w http.ResponseWriter, r *http.Request) {
@@ -180,6 +199,8 @@ func (h *Handler) HandleGet(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		http.Redirect(w, r, originalURL, http.StatusTemporaryRedirect)
+		userID, ok := appctx.UserID(r.Context())
+		h.sendAuditEvent(r.Context(), "follow", userID, ok, originalURL)
 		return
 	} else {
 		if errors.Is(err, service.ErrNotFound) {
@@ -366,6 +387,7 @@ func (h *Handler) HandleAPIShorten(w http.ResponseWriter, r *http.Request) {
 		h.l.Errorf("failed to write response body: %v", err)
 		return
 	}
+	h.sendAuditEvent(r.Context(), "shorten", userID, true, request.URL)
 }
 
 func (h *Handler) HandlePing(w http.ResponseWriter, _ *http.Request) {
