@@ -2,7 +2,9 @@ package handler
 
 import (
 	"bytes"
+	"github.com/delyke/urlShortener/internal/app/appctx"
 	"github.com/delyke/urlShortener/internal/config"
+	"github.com/delyke/urlShortener/internal/logger"
 	"github.com/delyke/urlShortener/internal/mocks"
 	"github.com/delyke/urlShortener/internal/repository"
 	"github.com/delyke/urlShortener/internal/service"
@@ -11,6 +13,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 )
 
 func TestHandler_HandleAPIShortenBatch(t *testing.T) {
@@ -79,6 +82,7 @@ func TestHandler_HandleAPIShortenBatch(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			request := httptest.NewRequest(tt.args.method, tt.args.request, bytes.NewReader(tt.args.body))
 			request.Header.Set("Content-Type", tt.args.contentType)
+			request = request.WithContext(appctx.SetUserID(request.Context(), 1))
 			w := httptest.NewRecorder()
 
 			cfg := &config.Config{
@@ -91,13 +95,18 @@ func TestHandler_HandleAPIShortenBatch(t *testing.T) {
 			defer ctrl.Finish()
 
 			repo := mocks.NewMockURLRepository(ctrl)
-			svc := service.NewURLService(repo, cfg)
-			h := NewHandler(svc, cfg)
+			svc := service.NewURLService(repo, cfg, 5*time.Second, 100)
+			l, err := logger.Initialize(cfg.LogLevel)
+			if err != nil {
+				t.Errorf("Failed to initialize logger: %v", err)
+				return
+			}
+			h := NewHandler(svc, cfg, l)
 
 			if tt.name == "Batch Post Success" {
 				repo.EXPECT().
 					GetOriginalLink(gomock.Any()).
-					Return("", repository.ErrRecordNotFound).
+					Return("", nil, repository.ErrRecordNotFound).
 					AnyTimes()
 
 				repo.EXPECT().

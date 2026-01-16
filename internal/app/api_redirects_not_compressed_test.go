@@ -18,6 +18,7 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestGzipExpand(t *testing.T) {
@@ -32,11 +33,11 @@ func TestGzipExpand(t *testing.T) {
 
 	repo := mocks.NewMockURLRepository(ctrl)
 
-	svc := service.NewURLService(repo, cfg)
-	h := handler.NewHandler(svc, cfg)
+	svc := service.NewURLService(repo, cfg, 5*time.Second, 100)
 	l, err := logger.Initialize(cfg.LogLevel)
 	require.NoError(t, err)
-	router := NewRouter(h, l)
+	h := handler.NewHandler(svc, cfg, l)
+	router := NewRouter(h, l, cfg, svc)
 
 	originalURL := "https://vk.com"
 	requestBody := map[string]string{"url": originalURL}
@@ -48,13 +49,15 @@ func TestGzipExpand(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, zw.Close())
 
+	repo.EXPECT().CreateUser().Return(int64(1), nil).AnyTimes()
+
 	repo.EXPECT().
-		Save(originalURL, gomock.Any()).
+		Save(originalURL, gomock.Any(), gomock.Any()).
 		Return("abc123", nil)
 
 	repo.EXPECT().
 		GetOriginalLink(gomock.Any()).
-		Return("", repository.ErrRecordNotFound)
+		Return("", nil, repository.ErrRecordNotFound)
 
 	req := httptest.NewRequest(http.MethodPost, "/api/shorten", &buf)
 
@@ -64,9 +67,11 @@ func TestGzipExpand(t *testing.T) {
 
 	w := httptest.NewRecorder()
 
+	isDeleted := false
+
 	repo.EXPECT().
 		GetOriginalLink(gomock.Any()).
-		Return(originalURL, nil)
+		Return(originalURL, &isDeleted, nil)
 
 	router.ServeHTTP(w, req)
 

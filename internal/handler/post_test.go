@@ -2,15 +2,19 @@ package handler
 
 import (
 	"bytes"
+	"github.com/delyke/urlShortener/internal/app/appctx"
 	"github.com/delyke/urlShortener/internal/config"
+	"github.com/delyke/urlShortener/internal/logger"
 	"github.com/delyke/urlShortener/internal/mocks"
 	"github.com/delyke/urlShortener/internal/repository"
 	"github.com/delyke/urlShortener/internal/service"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
+	"log"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 )
 
 func TestHandler_HandlePost(t *testing.T) {
@@ -53,6 +57,7 @@ func TestHandler_HandlePost(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			request := httptest.NewRequest(tt.method, tt.request, bytes.NewReader(tt.body))
+			request = request.WithContext(appctx.SetUserID(request.Context(), 1))
 			w := httptest.NewRecorder()
 			cfg := &config.Config{
 				RunAddr:  ":8080",
@@ -64,16 +69,20 @@ func TestHandler_HandlePost(t *testing.T) {
 			defer ctrl.Finish()
 
 			repo := mocks.NewMockURLRepository(ctrl)
-			svc := service.NewURLService(repo, cfg)
-			h := NewHandler(svc, cfg)
+			svc := service.NewURLService(repo, cfg, 5*time.Second, 100)
+			l, err := logger.Initialize(cfg.LogLevel)
+			if err != nil {
+				log.Fatal("Failed to initialize logger:", err)
+			}
+			h := NewHandler(svc, cfg, l)
 
 			if tt.name == "Positive Test" {
 				repo.EXPECT().
 					GetOriginalLink(gomock.Any()).
-					Return("", repository.ErrRecordNotFound)
+					Return("", nil, repository.ErrRecordNotFound)
 
 				repo.EXPECT().
-					Save("https://vk.com", gomock.Any()).
+					Save("https://vk.com", gomock.Any(), gomock.Any()).
 					Return("abc123", nil)
 			}
 

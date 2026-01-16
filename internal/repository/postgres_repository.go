@@ -9,6 +9,7 @@ import (
 	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v5/pgconn"
 	_ "github.com/jackc/pgx/v5/stdlib"
+	"github.com/lib/pq"
 	"log"
 	"time"
 )
@@ -40,16 +41,58 @@ func NewConflictError(shortURL string) error {
 	return &ConflictError{ShortURL: shortURL}
 }
 
-func (repo *PostgresRepository) Save(originalURL string, shortedURL string) (string, error) {
+func (repo *PostgresRepository) DeleteURLsByUser(userID int64, URLs []string) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	query := `UPDATE urls SET is_deleted = TRUE WHERE user_id = $1 AND short_url = ANY($2)`
+	result, err := repo.db.ExecContext(ctx, query, userID, pq.Array(URLs))
+	if err != nil {
+		return err
+	}
+	n, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	log.Printf("deleted %d urls, user ID: %d", n, userID)
+	return nil
+}
+
+func (repo *PostgresRepository) GetURLsByUserID(userID int64) (*[]model.URL, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
+	var urls []model.URL
+	query := `SELECT * FROM urls WHERE user_id = $1`
+	rows, err := repo.db.QueryContext(ctx, query, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var url model.URL
+		if err := rows.Scan(&url.UUID, &url.OriginalURL, &url.ShortURL, &url.UserID, &url.IsDeleted); err != nil {
+			return nil, err
+		}
+		urls = append(urls, url)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
 
+	if len(urls) == 0 {
+		return nil, ErrRecordNotFound
+	}
+	return &urls, nil
+}
+
+func (repo *PostgresRepository) Save(originalURL string, shortedURL string, userID int64) (string, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
 	query := `
-        INSERT INTO urls (original_url, short_url)
-        VALUES ($1, $2)
+        INSERT INTO urls (original_url, short_url, user_id)
+        VALUES ($1, $2, $3)
         ON CONFLICT (original_url) DO NOTHING
     `
-	result, err := repo.db.ExecContext(ctx, query, originalURL, shortedURL)
+	result, err := repo.db.ExecContext(ctx, query, originalURL, shortedURL, userID)
 	if err != nil {
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) && pgErr.Code == pgerrcode.UniqueViolation {
@@ -98,20 +141,21 @@ func (repo *PostgresRepository) GetShortURLByOriginal(originalURL string) (strin
 	return shortedURL, nil
 }
 
-func (repo *PostgresRepository) GetOriginalLink(shortedURL string) (string, error) {
+func (repo *PostgresRepository) GetOriginalLink(shortedURL string) (string, *bool, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
 
 	var originalURL string
-	err := repo.db.QueryRowContext(ctx, "SELECT original_url FROM urls WHERE short_url = $1", shortedURL).Scan(&originalURL)
+	var isDeleted bool
+	err := repo.db.QueryRowContext(ctx, "SELECT original_url, is_deleted FROM urls WHERE short_url = $1", shortedURL).Scan(&originalURL, &isDeleted)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return "", ErrRecordNotFound
+			return "", nil, ErrRecordNotFound
 		} else {
-			return "", err
+			return "", nil, err
 		}
 	}
-	return originalURL, nil
+	return originalURL, &isDeleted, nil
 }
 
 func (repo *PostgresRepository) SaveBatch(records []model.URL) error {
@@ -150,4 +194,14 @@ func (repo *PostgresRepository) Ping() error {
 		return err
 	}
 	return nil
+}
+
+func (repo *PostgresRepository) CreateUser() (int64, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+	var id int64
+	if err := repo.db.QueryRowContext(ctx, "INSERT INTO users DEFAULT VALUES RETURNING id").Scan(&id); err != nil {
+		return -1, err
+	}
+	return id, nil
 }

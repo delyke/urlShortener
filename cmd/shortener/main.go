@@ -9,6 +9,7 @@ import (
 	"github.com/delyke/urlShortener/internal/service"
 	"log"
 	"net/http"
+	"time"
 )
 
 func main() {
@@ -36,11 +37,13 @@ func main() {
 	if err != nil {
 		l.Fatal("Failed to initialize repo: ", err)
 	}
-	svc := service.NewURLService(repo, cfg)
-	h := handler.NewHandler(svc, cfg)
+	svc := service.NewURLService(repo, cfg, 10*time.Second, 100)
+	svc.StartDeleter()
+	defer svc.StopDeleter()
+	h := handler.NewHandler(svc, cfg, l)
 	l.Info("Running server on", cfg.RunAddr)
 
-	err = http.ListenAndServe(cfg.RunAddr, app.NewRouter(h, l))
+	err = http.ListenAndServe(cfg.RunAddr, app.NewRouter(h, l, cfg, svc))
 	if err != nil {
 		l.Fatal("Failed listen and serve:", err)
 	}
