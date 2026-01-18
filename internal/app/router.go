@@ -12,6 +12,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/golang-jwt/jwt/v4"
 	"net/http"
+	"net/http/pprof"
 	"strings"
 	"time"
 )
@@ -31,6 +32,18 @@ func NewRouter(h *handler.Handler, l *logger.Logger, cfg *config.Config, svc *se
 		r.Get("/api/user/urls", h.HandleAPIUserURLs)
 		r.Delete("/api/user/urls", h.HandleAPIUserURLsDelete)
 	})
+	if cfg.PprofEnabled {
+		r.Route("/debug/pprof", func(r chi.Router) {
+			r.Get("/", pprof.Index)
+			r.Get("/cmdline", pprof.Cmdline)
+			r.Get("/profile", pprof.Profile)
+			r.Get("/symbol", pprof.Symbol)
+			r.Get("/trace", pprof.Trace)
+			r.Get("/{name}", func(w http.ResponseWriter, r *http.Request) {
+				pprof.Handler(chi.URLParam(r, "name")).ServeHTTP(w, r)
+			})
+		})
+	}
 	return r
 }
 

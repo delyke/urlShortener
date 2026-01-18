@@ -15,6 +15,7 @@ type Config struct {
 	HMACSecret      string `env:"HMAC_SECRET"`
 	AuditFile       string `env:"AUDIT_FILE"`
 	AuditURL        string `env:"AUDIT_URL"`
+	PprofEnabled    bool   `env:"PPROF_ENABLED"`
 }
 
 func GetConfig() (*Config, error) {
@@ -27,6 +28,7 @@ func GetConfig() (*Config, error) {
 	hmacSecret := flag.String("s", "default-secret", "HMAC secret")
 	auditFile := flag.String("audit-file", "", "Audit file path")
 	auditURL := flag.String("audit-url", "", "Audit server URL")
+	pprofEnabled := flag.Bool("pprof", false, "Enable pprof endpoint")
 
 	flag.Parse()
 
@@ -71,6 +73,10 @@ func GetConfig() (*Config, error) {
 
 	if cfg.AuditURL == "" {
 		cfg.AuditURL = *auditURL
+	}
+
+	if !cfg.PprofEnabled {
+		cfg.PprofEnabled = *pprofEnabled
 	}
 
 	return &cfg, nil

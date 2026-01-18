@@ -231,8 +231,8 @@ func (s *URLService) PingDatabase() error {
 }
 
 func (s *URLService) ShortenBatch(items []model.BatchRequestItem, userID int64) ([]model.BatchResponseItem, error) {
-	var records []model.URL
-	var responses []model.BatchResponseItem
+	records := make([]model.URL, 0, len(items))
+	responses := make([]model.BatchResponseItem, 0, len(items))
 
 	for _, item := range items {
 		short, err := s.GetFreeShortURL()
