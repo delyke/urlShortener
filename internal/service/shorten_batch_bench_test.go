@@ -2,11 +2,12 @@ package service
 
 import (
 	"fmt"
+	"testing"
+	"time"
+
 	"github.com/delyke/urlShortener/internal/config"
 	"github.com/delyke/urlShortener/internal/model"
 	"github.com/delyke/urlShortener/internal/repository"
-	"testing"
-	"time"
 )
 
 func BenchmarkURLService_ShortenBatch(b *testing.B) {

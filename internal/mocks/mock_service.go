@@ -7,8 +7,9 @@ package mocks
 import (
 	reflect "reflect"
 
-	model "github.com/delyke/urlShortener/internal/model"
 	gomock "github.com/golang/mock/gomock"
+
+	model "github.com/delyke/urlShortener/internal/model"
 )
 
 // MockURLRepository is a mock of URLRepository interface.

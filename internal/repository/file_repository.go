@@ -3,11 +3,12 @@ package repository
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/delyke/urlShortener/internal/model"
 	"io"
 	"log"
 	"os"
 	"time"
+
+	"github.com/delyke/urlShortener/internal/model"
 )
 
 type FileRepository struct {

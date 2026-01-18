@@ -5,14 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/delyke/urlShortener/internal/app/appctx"
-	"github.com/delyke/urlShortener/internal/audit"
-	"github.com/delyke/urlShortener/internal/config"
-	"github.com/delyke/urlShortener/internal/logger"
-	"github.com/delyke/urlShortener/internal/model"
-	"github.com/delyke/urlShortener/internal/repository"
-	"github.com/delyke/urlShortener/internal/service"
-	"github.com/go-chi/chi/v5"
 	"io"
 	"log"
 	"net/http"
@@ -20,6 +12,16 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/go-chi/chi/v5"
+
+	"github.com/delyke/urlShortener/internal/app/appctx"
+	"github.com/delyke/urlShortener/internal/audit"
+	"github.com/delyke/urlShortener/internal/config"
+	"github.com/delyke/urlShortener/internal/logger"
+	"github.com/delyke/urlShortener/internal/model"
+	"github.com/delyke/urlShortener/internal/repository"
+	"github.com/delyke/urlShortener/internal/service"
 )
 
 type Handler struct {

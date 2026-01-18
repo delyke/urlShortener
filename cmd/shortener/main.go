@@ -1,6 +1,10 @@
 package main
 
 import (
+	"log"
+	"net/http"
+	"time"
+
 	"github.com/delyke/urlShortener/internal/app"
 	"github.com/delyke/urlShortener/internal/audit"
 	"github.com/delyke/urlShortener/internal/config"
@@ -8,9 +12,6 @@ import (
 	"github.com/delyke/urlShortener/internal/logger"
 	"github.com/delyke/urlShortener/internal/repository"
 	"github.com/delyke/urlShortener/internal/service"
-	"log"
-	"net/http"
-	"time"
 )
 
 func main() {

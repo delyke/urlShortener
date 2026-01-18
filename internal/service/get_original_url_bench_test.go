@@ -1,10 +1,11 @@
 package service
 
 import (
-	"github.com/delyke/urlShortener/internal/config"
-	"github.com/delyke/urlShortener/internal/repository"
 	"testing"
 	"time"
+
+	"github.com/delyke/urlShortener/internal/config"
+	"github.com/delyke/urlShortener/internal/repository"
 )
 
 func BenchmarkURLService_GetOriginalURL(b *testing.B) {

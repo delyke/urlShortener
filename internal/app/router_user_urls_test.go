@@ -1,14 +1,16 @@
 package app
 
 import (
-	"github.com/delyke/urlShortener/internal/config"
-	"github.com/delyke/urlShortener/internal/logger"
-	"github.com/delyke/urlShortener/internal/service"
-	"github.com/golang-jwt/jwt/v4"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 	"time"
+
+	"github.com/golang-jwt/jwt/v4"
+
+	"github.com/delyke/urlShortener/internal/config"
+	"github.com/delyke/urlShortener/internal/logger"
+	"github.com/delyke/urlShortener/internal/service"
 )
 
 func signTestToken(secret string, uid int64) (string, error) {

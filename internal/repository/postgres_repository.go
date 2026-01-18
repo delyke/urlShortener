@@ -5,13 +5,15 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"github.com/delyke/urlShortener/internal/model"
+	"log"
+	"time"
+
 	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v5/pgconn"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/lib/pq"
-	"log"
-	"time"
+
+	"github.com/delyke/urlShortener/internal/model"
 )
 
 type PostgresRepository struct {

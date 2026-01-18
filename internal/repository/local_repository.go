@@ -2,10 +2,11 @@ package repository
 
 import (
 	"errors"
-	"github.com/delyke/urlShortener/internal/model"
 	"log"
 	"sync"
 	"time"
+
+	"github.com/delyke/urlShortener/internal/model"
 )
 
 type LocalRepository struct {

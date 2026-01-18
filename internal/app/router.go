@@ -4,17 +4,19 @@ import (
 	"compress/gzip"
 	"encoding/json"
 	"fmt"
+	"net/http"
+	"net/http/pprof"
+	"strings"
+	"time"
+
+	"github.com/go-chi/chi/v5"
+	"github.com/golang-jwt/jwt/v4"
+
 	"github.com/delyke/urlShortener/internal/app/appctx"
 	"github.com/delyke/urlShortener/internal/config"
 	"github.com/delyke/urlShortener/internal/handler"
 	"github.com/delyke/urlShortener/internal/logger"
 	"github.com/delyke/urlShortener/internal/service"
-	"github.com/go-chi/chi/v5"
-	"github.com/golang-jwt/jwt/v4"
-	"net/http"
-	"net/http/pprof"
-	"strings"
-	"time"
 )
 
 func NewRouter(h *handler.Handler, l *logger.Logger, cfg *config.Config, svc *service.URLService) chi.Router {

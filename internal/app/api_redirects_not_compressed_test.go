@@ -4,14 +4,6 @@ import (
 	"bytes"
 	"compress/gzip"
 	"encoding/json"
-	"github.com/delyke/urlShortener/internal/config"
-	"github.com/delyke/urlShortener/internal/handler"
-	"github.com/delyke/urlShortener/internal/logger"
-	"github.com/delyke/urlShortener/internal/mocks"
-	"github.com/delyke/urlShortener/internal/repository"
-	"github.com/delyke/urlShortener/internal/service"
-	"github.com/golang/mock/gomock"
-	"github.com/stretchr/testify/require"
 	"io"
 	"log"
 	"net/http"
@@ -19,6 +11,16 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/golang/mock/gomock"
+	"github.com/stretchr/testify/require"
+
+	"github.com/delyke/urlShortener/internal/config"
+	"github.com/delyke/urlShortener/internal/handler"
+	"github.com/delyke/urlShortener/internal/logger"
+	"github.com/delyke/urlShortener/internal/mocks"
+	"github.com/delyke/urlShortener/internal/repository"
+	"github.com/delyke/urlShortener/internal/service"
 )
 
 func TestGzipExpand(t *testing.T) {

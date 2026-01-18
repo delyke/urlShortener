@@ -5,14 +5,15 @@ import (
 	"crypto/rand"
 	"encoding/base64"
 	"errors"
-	"github.com/delyke/urlShortener/internal/audit"
-	"github.com/delyke/urlShortener/internal/config"
-	"github.com/delyke/urlShortener/internal/model"
-	"github.com/delyke/urlShortener/internal/repository"
 	"log"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/delyke/urlShortener/internal/audit"
+	"github.com/delyke/urlShortener/internal/config"
+	"github.com/delyke/urlShortener/internal/model"
+	"github.com/delyke/urlShortener/internal/repository"
 )
 
 type URLService struct {
