@@ -7,6 +7,7 @@ import (
 	"github.com/delyke/urlShortener/internal/model"
 )
 
+// ShortenURLService defines URL shortener operations used by HTTP handlers.
 type ShortenURLService interface {
 	ShortenURL(originalURL string, userID int64) (string, error)
 	GetOriginalURL(shortenURL string) (string, *bool, error)

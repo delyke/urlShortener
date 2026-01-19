@@ -19,6 +19,7 @@ import (
 	"github.com/delyke/urlShortener/internal/service"
 )
 
+// NewRouter configures application routes and middleware
 func NewRouter(h *handler.Handler, l *logger.Logger, cfg *config.Config, svc *service.URLService) chi.Router {
 	r := chi.NewRouter()
 	r.Use(gzipMiddleware)
@@ -49,10 +50,12 @@ func NewRouter(h *handler.Handler, l *logger.Logger, cfg *config.Config, svc *se
 	return r
 }
 
+// ErrorResponse describes a JSON error response.
 type ErrorResponse struct {
 	Error string `json:"error"`
 }
 
+// Claims stores JWT claims with the user ID
 type Claims struct {
 	jwt.RegisteredClaims
 	UserID int64

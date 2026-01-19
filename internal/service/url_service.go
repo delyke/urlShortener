@@ -16,6 +16,7 @@ import (
 	"github.com/delyke/urlShortener/internal/repository"
 )
 
+// URLService coordinates URL shortening and storage operations.
 type URLService struct {
 	repo       repository.URLRepository
 	cfg        *config.Config
@@ -29,6 +30,7 @@ type URLService struct {
 	obsMu      sync.RWMutex
 }
 
+// NewURLService constructs a URLService with repository and configurations.
 func NewURLService(repo repository.URLRepository, config *config.Config, delTimeout time.Duration, bufLen int) *URLService {
 	if delTimeout <= 0 {
 		delTimeout = time.Second * 5
@@ -44,24 +46,31 @@ func NewURLService(repo repository.URLRepository, config *config.Config, delTime
 	}
 }
 
+// ErrNotFound indicates a missing URL record.
 var ErrNotFound = errors.New("url not found")
+
+// ErrCanNotCreateURL indicates a failure to generate a short URL.
 var ErrCanNotCreateURL = errors.New("url cannot be created")
 
+// DeleteUserURLs represents a delete command for a user's shortened URL
 type DeleteUserURLs struct {
 	UserID       int64
 	ShortenedURL string
 }
 
+// StartDeleter starts the background deletion worker.
 func (s *URLService) StartDeleter() {
 	s.wg.Add(1)
 	go s.deleteLoop()
 }
 
+// StopDeleter stops the background deletion worker.
 func (s *URLService) StopDeleter() {
 	close(s.stopCh)
 	s.wg.Wait()
 }
 
+// RegisterAuditObserver attaches an audit observer to the service.
 func (s *URLService) RegisterAuditObserver(observer audit.Observer) {
 	if observer == nil {
 		return
@@ -71,6 +80,7 @@ func (s *URLService) RegisterAuditObserver(observer audit.Observer) {
 	s.observers = append(s.observers, observer)
 }
 
+// NotifyAudit - sends an audit event to all observers
 func (s *URLService) NotifyAudit(ctx context.Context, event audit.Event) error {
 	s.obsMu.RLock()
 	observers := append([]audit.Observer(nil), s.observers...)
@@ -153,6 +163,7 @@ func (s *URLService) deleteLoop() {
 	}
 }
 
+// EnqueueDelete adds URL delete commands to the background queue.
 func (s *URLService) EnqueueDelete(userID int64, URLs []string) error {
 	if len(URLs) == 0 {
 		return errors.New("urls is empty")
@@ -172,10 +183,12 @@ func (s *URLService) EnqueueDelete(userID int64, URLs []string) error {
 	return nil
 }
 
+// CreateUser creates a new user record.
 func (s *URLService) CreateUser() (int64, error) {
 	return s.repo.CreateUser()
 }
 
+// GetURLsByUser returns URLs for the specified user.
 func (s *URLService) GetURLsByUser(userID int64) (*[]model.URL, error) {
 	var urls *[]model.URL
 	urls, err := s.repo.GetURLsByUserID(userID)
@@ -185,6 +198,7 @@ func (s *URLService) GetURLsByUser(userID int64) (*[]model.URL, error) {
 	return urls, nil
 }
 
+// GetFreeShortURL generates a short URL that does not yet exist.
 func (s *URLService) GetFreeShortURL() (string, error) {
 	var shortenURL string
 	for i := 0; i < 3; i++ {
@@ -203,6 +217,7 @@ func (s *URLService) GetFreeShortURL() (string, error) {
 	return shortenURL, nil
 }
 
+// ShortenURL creates a new short URL for the provided original URL.
 func (s *URLService) ShortenURL(originalURL string, userID int64) (string, error) {
 	shortenURL, err := s.GetFreeShortURL()
 	if err != nil {
@@ -215,6 +230,7 @@ func (s *URLService) ShortenURL(originalURL string, userID int64) (string, error
 	return shortenURL, nil
 }
 
+// GetOriginalURL resolves a short URL to its original URL.
 func (s *URLService) GetOriginalURL(shortenURL string) (string, *bool, error) {
 	url, isDeleted, err := s.repo.GetOriginalLink(shortenURL)
 	if err != nil {
@@ -227,10 +243,12 @@ func (s *URLService) GetOriginalURL(shortenURL string) (string, *bool, error) {
 	return url, isDeleted, nil
 }
 
+// PingDatabase checks the repository connectivity
 func (s *URLService) PingDatabase() error {
 	return s.repo.Ping()
 }
 
+// ShortenBatch shortens a batch of URLs and returns their short forms
 func (s *URLService) ShortenBatch(items []model.BatchRequestItem, userID int64) ([]model.BatchResponseItem, error) {
 	records := make([]model.URL, 0, len(items))
 	responses := make([]model.BatchResponseItem, 0, len(items))

@@ -2,6 +2,7 @@ package repository
 
 import "github.com/delyke/urlShortener/internal/model"
 
+// URLRepository defines storage operations for shortened URLs and users.
 type URLRepository interface {
 	Save(originalURL string, shortedURL string, userID int64) (string, error)
 	GetOriginalLink(shortedURL string) (string, *bool, error)

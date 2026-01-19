@@ -6,10 +6,12 @@ import (
 	"os"
 )
 
+// FileObserver writes audit events to a local file
 type FileObserver struct {
 	path string
 }
 
+// NewFileObserver creates an observer that appends audit events to a file
 func NewFileObserver(path string) (*FileObserver, error) {
 	if path == "" {
 		return nil, ErrAuditFileIsEmpty
@@ -17,7 +19,8 @@ func NewFileObserver(path string) (*FileObserver, error) {
 	return &FileObserver{path: path}, nil
 }
 
-func (o *FileObserver) OnEvent(ctx context.Context, e Event) error {
+// OnEvent serializes the event as JSON and appends it to the file.
+func (o *FileObserver) OnEvent(_ context.Context, e Event) error {
 	payload, err := json.Marshal(e)
 	if err != nil {
 		return err

@@ -7,10 +7,12 @@ import (
 	"go.uber.org/zap"
 )
 
+// Logger wraps zap.SugaredLogger with HTTP middleware helpers.
 type Logger struct {
 	*zap.SugaredLogger
 }
 
+// Initialize builds a Logger with the provided log level.
 func Initialize(level string) (*Logger, error) {
 	lvl, err := zap.ParseAtomicLevel(level)
 	if err != nil {
@@ -51,6 +53,7 @@ func (r *loggingResponseWriter) WriteHeader(statusCode int) {
 	r.responseData.status = statusCode
 }
 
+// RequestLogger logs details about HTTP requests and responses.
 func (l *Logger) RequestLogger(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()

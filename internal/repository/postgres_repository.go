@@ -16,10 +16,12 @@ import (
 	"github.com/delyke/urlShortener/internal/model"
 )
 
+// PostgresRepository stores URL data in a PostgreSQL database
 type PostgresRepository struct {
 	db *sql.DB
 }
 
+// NewPostgresRepository connects to PostgreSQL and runs migrations.
 func NewPostgresRepository(dsn string) (*PostgresRepository, error) {
 	db, err := sql.Open("pgx", dsn)
 	if err != nil {
@@ -31,18 +33,22 @@ func NewPostgresRepository(dsn string) (*PostgresRepository, error) {
 	return &PostgresRepository{db: db}, nil
 }
 
+// ConflictError indicates a URL already exists with a short code.
 type ConflictError struct {
 	ShortURL string
 }
 
+// Error returns the conflict error string
 func (e *ConflictError) Error() string {
 	return fmt.Sprintf("url already exists with short URL: %s", e.ShortURL)
 }
 
+// NewConflictError - creates an error describing the conflicting short URL.
 func NewConflictError(shortURL string) error {
 	return &ConflictError{ShortURL: shortURL}
 }
 
+// DeleteURLsByUser - marks URLs as deleted for the specified user.
 func (repo *PostgresRepository) DeleteURLsByUser(userID int64, URLs []string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
@@ -59,6 +65,7 @@ func (repo *PostgresRepository) DeleteURLsByUser(userID int64, URLs []string) er
 	return nil
 }
 
+// GetURLsByUserID returns all URLs for the specified user.
 func (repo *PostgresRepository) GetURLsByUserID(userID int64) (*[]model.URL, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
@@ -86,6 +93,7 @@ func (repo *PostgresRepository) GetURLsByUserID(userID int64) (*[]model.URL, err
 	return &urls, nil
 }
 
+// Save stores a new URL mapping, returning a conflict error on duplicates.
 func (repo *PostgresRepository) Save(originalURL string, shortedURL string, userID int64) (string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
@@ -123,6 +131,7 @@ func (repo *PostgresRepository) Save(originalURL string, shortedURL string, user
 	return shortedURL, nil
 }
 
+// GetShortURLByOriginal - finds a short URL by its original URL.
 func (repo *PostgresRepository) GetShortURLByOriginal(originalURL string) (string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
@@ -143,6 +152,7 @@ func (repo *PostgresRepository) GetShortURLByOriginal(originalURL string) (strin
 	return shortedURL, nil
 }
 
+// GetOriginalLink - returns the original URL and deletion flag for a shortened URL.
 func (repo *PostgresRepository) GetOriginalLink(shortedURL string) (string, *bool, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
@@ -160,6 +170,7 @@ func (repo *PostgresRepository) GetOriginalLink(shortedURL string) (string, *boo
 	return originalURL, &isDeleted, nil
 }
 
+// SaveBatch stores a batch of URL records in a transaction.
 func (repo *PostgresRepository) SaveBatch(records []model.URL) error {
 	tx, err := repo.db.Begin()
 	if err != nil {
@@ -189,6 +200,7 @@ func (repo *PostgresRepository) SaveBatch(records []model.URL) error {
 	return nil
 }
 
+// Ping checks database connectivity
 func (repo *PostgresRepository) Ping() error {
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 	defer cancel()
@@ -198,6 +210,7 @@ func (repo *PostgresRepository) Ping() error {
 	return nil
 }
 
+// CreateUser inserts a new user record and returns its ID.
 func (repo *PostgresRepository) CreateUser() (int64, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()

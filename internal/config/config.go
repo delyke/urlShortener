@@ -6,6 +6,7 @@ import (
 	"github.com/caarlos0/env/v6"
 )
 
+// Config stores runtime configuration for the URL shortener service
 type Config struct {
 	RunAddr         string `env:"SERVER_ADDRESS"`
 	BaseAddr        string `env:"BASE_URL"`
@@ -19,6 +20,7 @@ type Config struct {
 	PprofEnabled    bool   `env:"PPROF_ENABLED"`
 }
 
+// GetConfig reads configuration from environment variables and CLI flags
 func GetConfig() (*Config, error) {
 	runAddr := flag.String("a", ":8080", "Run server address")
 	baseAddr := flag.String("b", "http://localhost:8080", "Base server address")
