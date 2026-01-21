@@ -19,7 +19,7 @@ type HTTPObserver struct {
 // NewHTTPObserver creates an observer that posts audit events to an HTTP endpoint
 func NewHTTPObserver(url string, client *http.Client) (*HTTPObserver, error) {
 	if url == "" {
-		return nil, ErrAuditUrlIsEmpty
+		return nil, ErrAuditURLIsEmpty
 	}
 	if client == nil {
 		client = &http.Client{Timeout: time.Second * 5}
