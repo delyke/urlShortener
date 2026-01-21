@@ -4,18 +4,22 @@ import (
 	"compress/gzip"
 	"encoding/json"
 	"fmt"
+	"net/http"
+	"net/http/pprof"
+	"strings"
+	"time"
+
+	"github.com/go-chi/chi/v5"
+	"github.com/golang-jwt/jwt/v4"
+
 	"github.com/delyke/urlShortener/internal/app/appctx"
 	"github.com/delyke/urlShortener/internal/config"
 	"github.com/delyke/urlShortener/internal/handler"
 	"github.com/delyke/urlShortener/internal/logger"
 	"github.com/delyke/urlShortener/internal/service"
-	"github.com/go-chi/chi/v5"
-	"github.com/golang-jwt/jwt/v4"
-	"net/http"
-	"strings"
-	"time"
 )
 
+// NewRouter configures application routes and middleware
 func NewRouter(h *handler.Handler, l *logger.Logger, cfg *config.Config, svc *service.URLService) chi.Router {
 	r := chi.NewRouter()
 	r.Use(gzipMiddleware)
@@ -31,13 +35,27 @@ func NewRouter(h *handler.Handler, l *logger.Logger, cfg *config.Config, svc *se
 		r.Get("/api/user/urls", h.HandleAPIUserURLs)
 		r.Delete("/api/user/urls", h.HandleAPIUserURLsDelete)
 	})
+	if cfg.PprofEnabled {
+		r.Route("/debug/pprof", func(r chi.Router) {
+			r.Get("/", pprof.Index)
+			r.Get("/cmdline", pprof.Cmdline)
+			r.Get("/profile", pprof.Profile)
+			r.Get("/symbol", pprof.Symbol)
+			r.Get("/trace", pprof.Trace)
+			r.Get("/{name}", func(w http.ResponseWriter, r *http.Request) {
+				pprof.Handler(chi.URLParam(r, "name")).ServeHTTP(w, r)
+			})
+		})
+	}
 	return r
 }
 
+// ErrorResponse describes a JSON error response.
 type ErrorResponse struct {
 	Error string `json:"error"`
 }
 
+// Claims stores JWT claims with the user ID
 type Claims struct {
 	jwt.RegisteredClaims
 	UserID int64

@@ -3,19 +3,22 @@ package repository
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/delyke/urlShortener/internal/model"
 	"io"
 	"log"
 	"os"
 	"time"
+
+	"github.com/delyke/urlShortener/internal/model"
 )
 
+// FileRepository stores URL and user data in a JSON file.
 type FileRepository struct {
 	filename string
 	urls     []model.URL
 	users    []model.User
 }
 
+// NewFileRepository loads data from a JSON file and returns a repository.
 func NewFileRepository(filename string) (*FileRepository, error) {
 	var urls []model.URL
 	var users []model.User
@@ -37,6 +40,7 @@ func NewFileRepository(filename string) (*FileRepository, error) {
 	}, nil
 }
 
+// Producer writes JSON records to a file.
 type Producer struct {
 	file    *os.File
 	encoder *json.Encoder
@@ -50,10 +54,12 @@ func newProducer(filename string) (*Producer, error) {
 	return &Producer{file: file, encoder: json.NewEncoder(file)}, nil
 }
 
+// Close releases the underlying file descriptor
 func (p *Producer) Close() error {
 	return p.file.Close()
 }
 
+// Consumer - reads JSON records from a file.
 type Consumer struct {
 	file    *os.File
 	decoder *json.Decoder
@@ -67,10 +73,12 @@ func newConsumer(filename string) (*Consumer, error) {
 	return &Consumer{file: file, decoder: json.NewDecoder(file)}, nil
 }
 
+// Close releases the underlying file descriptor.
 func (c *Consumer) Close() error {
 	return c.file.Close()
 }
 
+// DeleteURLsByUser - marks URLs as deleted for the specified user.
 func (repo *FileRepository) DeleteURLsByUser(userID int64, URLs []string) error {
 	if len(URLs) == 0 {
 		return nil
@@ -109,6 +117,7 @@ func (repo *FileRepository) DeleteURLsByUser(userID int64, URLs []string) error 
 	return nil
 }
 
+// Save stores a new URL mapping and persists it to disk.
 func (repo *FileRepository) Save(originalURL string, shortedURL string, userID int64) (string, error) {
 	for _, u := range repo.urls {
 		if u.OriginalURL == originalURL {
@@ -143,6 +152,7 @@ func (repo *FileRepository) Save(originalURL string, shortedURL string, userID i
 	return shortedURL, nil
 }
 
+// GetOriginalLink returns the original URL and deletion flag for a shortened URL.
 func (repo *FileRepository) GetOriginalLink(shortedURL string) (string, *bool, error) {
 	for _, url := range repo.urls {
 		if url.ShortURL == shortedURL {
@@ -156,10 +166,12 @@ func (repo *FileRepository) generateUUID() (string, error) {
 	return fmt.Sprintf("%d", len(repo.urls)+1), nil
 }
 
+// Ping checks repository availability.
 func (repo *FileRepository) Ping() error {
 	return nil
 }
 
+// SaveBatch stores a batch of URL records.
 func (repo *FileRepository) SaveBatch(records []model.URL) error {
 	for _, record := range records {
 		_, err := repo.Save(record.OriginalURL, record.ShortURL, record.UserID)
@@ -169,6 +181,8 @@ func (repo *FileRepository) SaveBatch(records []model.URL) error {
 	}
 	return nil
 }
+
+// GetShortURLByOriginal finds a short URL by its original URL.
 func (repo *FileRepository) GetShortURLByOriginal(originalURL string) (string, error) {
 	for _, url := range repo.urls {
 		if url.OriginalURL == originalURL {
@@ -178,6 +192,7 @@ func (repo *FileRepository) GetShortURLByOriginal(originalURL string) (string, e
 	return "", ErrRecordNotFound
 }
 
+// CreateUser creates a new user record and returns its ID.
 func (repo *FileRepository) CreateUser() (int64, error) {
 	producer, err := newProducer(repo.filename)
 	if err != nil {
@@ -200,6 +215,7 @@ func (repo *FileRepository) CreateUser() (int64, error) {
 	return user.ID, nil
 }
 
+// GetURLsByUserID returns all URLs for the specified user.
 func (repo *FileRepository) GetURLsByUserID(userID int64) (*[]model.URL, error) {
 	var urls []model.URL
 	for _, url := range repo.urls {

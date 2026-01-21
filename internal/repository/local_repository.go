@@ -2,12 +2,14 @@ package repository
 
 import (
 	"errors"
-	"github.com/delyke/urlShortener/internal/model"
 	"log"
 	"sync"
 	"time"
+
+	"github.com/delyke/urlShortener/internal/model"
 )
 
+// LocalRepository stores data in memory for development/testing
 type LocalRepository struct {
 	data struct {
 		urls  []model.URL
@@ -16,6 +18,7 @@ type LocalRepository struct {
 	mu *sync.Mutex
 }
 
+// NewLocalRepository creates an in-memory repository instance.
 func NewLocalRepository() (*LocalRepository, error) {
 	return &LocalRepository{
 		data: struct {
@@ -29,6 +32,7 @@ func NewLocalRepository() (*LocalRepository, error) {
 	}, nil
 }
 
+// Save stores a new URL mapping in memory.
 func (repo *LocalRepository) Save(originalURL string, shortedURL string, userID int64) (string, error) {
 	repo.mu.Lock()
 	defer repo.mu.Unlock()
@@ -49,8 +53,10 @@ func (repo *LocalRepository) Save(originalURL string, shortedURL string, userID 
 	return shortedURL, nil
 }
 
+// ErrRecordNotFound is returned when a record cannot be found in storage.
 var ErrRecordNotFound = errors.New("record not found")
 
+// DeleteURLsByUser marks URLs as deleted for specified user.
 func (repo *LocalRepository) DeleteURLsByUser(userID int64, URLs []string) error {
 	repo.mu.Lock()
 	defer repo.mu.Unlock()
@@ -79,6 +85,7 @@ func (repo *LocalRepository) DeleteURLsByUser(userID int64, URLs []string) error
 	return nil
 }
 
+// GetOriginalLink - returns the original URL and deletion flag for a shortened URL.
 func (repo *LocalRepository) GetOriginalLink(shortedURL string) (string, *bool, error) {
 	repo.mu.Lock()
 	defer repo.mu.Unlock()
@@ -98,10 +105,12 @@ func (repo *LocalRepository) GetOriginalLink(shortedURL string) (string, *bool, 
 	return originalURL, &isDeleted, nil
 }
 
+// Ping checks repository availability
 func (repo *LocalRepository) Ping() error {
 	return nil
 }
 
+// SaveBatch stores a batch of URL records.
 func (repo *LocalRepository) SaveBatch(records []model.URL) error {
 	repo.mu.Lock()
 	defer repo.mu.Unlock()
@@ -109,6 +118,7 @@ func (repo *LocalRepository) SaveBatch(records []model.URL) error {
 	return nil
 }
 
+// GetShortURLByOriginal - finds a short URL by its original URL.
 func (repo *LocalRepository) GetShortURLByOriginal(originalURL string) (string, error) {
 	var shortURL string
 	repo.mu.Lock()
@@ -125,6 +135,7 @@ func (repo *LocalRepository) GetShortURLByOriginal(originalURL string) (string, 
 	return shortURL, nil
 }
 
+// CreateUser - creates a new user record and returns its ID.
 func (repo *LocalRepository) CreateUser() (int64, error) {
 	repo.mu.Lock()
 	defer repo.mu.Unlock()
@@ -137,6 +148,7 @@ func (repo *LocalRepository) CreateUser() (int64, error) {
 	return user.ID, nil
 }
 
+// GetURLsByUserID returns all URLs for the specified user.
 func (repo *LocalRepository) GetURLsByUserID(userID int64) (*[]model.URL, error) {
 	var urls []model.URL
 	repo.mu.Lock()

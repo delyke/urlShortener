@@ -3,18 +3,20 @@ package app
 import (
 	"bytes"
 	"compress/gzip"
-	"github.com/delyke/urlShortener/internal/config"
-	"github.com/delyke/urlShortener/internal/handler"
-	"github.com/delyke/urlShortener/internal/logger"
-	"github.com/delyke/urlShortener/internal/mocks"
-	"github.com/delyke/urlShortener/internal/service"
-	"github.com/golang/mock/gomock"
-	"github.com/stretchr/testify/require"
 	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 	"time"
+
+	"github.com/golang/mock/gomock"
+	"github.com/stretchr/testify/require"
+
+	"github.com/delyke/urlShortener/internal/config"
+	"github.com/delyke/urlShortener/internal/handler"
+	"github.com/delyke/urlShortener/internal/logger"
+	"github.com/delyke/urlShortener/internal/mocks"
+	"github.com/delyke/urlShortener/internal/service"
 )
 
 func TestCompression(t *testing.T) {

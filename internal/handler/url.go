@@ -1,33 +1,56 @@
 package handler
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
+	"log"
+	"net/http"
+	"net/url"
+	"strconv"
+	"strings"
+	"time"
+
+	"github.com/go-chi/chi/v5"
+
 	"github.com/delyke/urlShortener/internal/app/appctx"
+	"github.com/delyke/urlShortener/internal/audit"
 	"github.com/delyke/urlShortener/internal/config"
 	"github.com/delyke/urlShortener/internal/logger"
 	"github.com/delyke/urlShortener/internal/model"
 	"github.com/delyke/urlShortener/internal/repository"
 	"github.com/delyke/urlShortener/internal/service"
-	"github.com/go-chi/chi/v5"
-	"io"
-	"log"
-	"net/http"
-	"net/url"
-	"strings"
 )
 
+// Handler provides HTTP handlers for the URL shortener API.
 type Handler struct {
 	service ShortenURLService
 	config  *config.Config
 	l       *logger.Logger
 }
 
+// NewHandler constructs a Handler with dependencies.
 func NewHandler(service ShortenURLService, cfg *config.Config, l *logger.Logger) *Handler {
 	return &Handler{service: service, config: cfg, l: l}
 }
 
+func (h *Handler) sendAuditEvent(ctx context.Context, action string, userID int64, hasUser bool, originalURL string) {
+	event := audit.Event{
+		TS:     time.Now().Unix(),
+		Action: action,
+		URL:    originalURL,
+	}
+	if hasUser {
+		event.UserID = strconv.FormatInt(userID, 10)
+	}
+	if err := h.service.NotifyAudit(ctx, event); err != nil {
+		h.l.Errorf("failed to notify audit event: %v", err)
+	}
+}
+
+// HandlePost handles plain-text URL shortening requests.
 func (h *Handler) HandlePost(w http.ResponseWriter, r *http.Request) {
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
@@ -83,8 +106,10 @@ func (h *Handler) HandlePost(w http.ResponseWriter, r *http.Request) {
 		h.l.Errorf("failed to write body: %v", err)
 		return
 	}
+	h.sendAuditEvent(r.Context(), "shorten", userID, true, originalURL)
 }
 
+// HandleAPIUserURLsDelete deletes user URLs in batch.
 func (h *Handler) HandleAPIUserURLsDelete(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
@@ -138,6 +163,7 @@ type respUserURLs struct {
 	OriginalURL string `json:"original_url"`
 }
 
+// HandleAPIUserURLs returns the list of URLs created by the user.
 func (h *Handler) HandleAPIUserURLs(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
@@ -171,6 +197,7 @@ func (h *Handler) HandleAPIUserURLs(w http.ResponseWriter, r *http.Request) {
 	_, _ = w.Write(b)
 }
 
+// HandleGet redirects by short URL to the original URL.
 func (h *Handler) HandleGet(w http.ResponseWriter, r *http.Request) {
 	shortedURL := chi.URLParam(r, "shortURL")
 	originalURL, isDeleted, err := h.service.GetOriginalURL(shortedURL)
@@ -180,6 +207,8 @@ func (h *Handler) HandleGet(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		http.Redirect(w, r, originalURL, http.StatusTemporaryRedirect)
+		userID, ok := appctx.UserID(r.Context())
+		h.sendAuditEvent(r.Context(), "follow", userID, ok, originalURL)
 		return
 	} else {
 		if errors.Is(err, service.ErrNotFound) {
@@ -193,18 +222,22 @@ func (h *Handler) HandleGet(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// ShortenURLRequest is the request payload for /api/shorten.
 type ShortenURLRequest struct {
 	URL string `json:"url"`
 }
 
+// ShortenURLSuccessResponse is the successful response payload for /api/shorten.
 type ShortenURLSuccessResponse struct {
 	Result string `json:"result"`
 }
 
+// ShortenURLErrorResponse is the error response payload for /api/shorten.
 type ShortenURLErrorResponse struct {
 	Error string `json:"error"`
 }
 
+// HandleAPIShorten shortens a URL from a JSON request.
 func (h *Handler) HandleAPIShorten(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	if r.Header.Get("Content-Type") != "application/json" {
@@ -366,8 +399,10 @@ func (h *Handler) HandleAPIShorten(w http.ResponseWriter, r *http.Request) {
 		h.l.Errorf("failed to write response body: %v", err)
 		return
 	}
+	h.sendAuditEvent(r.Context(), "shorten", userID, true, request.URL)
 }
 
+// HandlePing checks database connectivity.
 func (h *Handler) HandlePing(w http.ResponseWriter, _ *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	err := h.service.PingDatabase()
@@ -381,6 +416,7 @@ func (h *Handler) HandlePing(w http.ResponseWriter, _ *http.Request) {
 	}
 }
 
+// HandleAPIShortenBatch shortens a batch of URLs from a JSON array.
 func (h *Handler) HandleAPIShortenBatch(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 

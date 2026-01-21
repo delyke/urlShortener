@@ -10,10 +10,12 @@ const (
 
 var userIDKey = userIDContextKey
 
+// SetUserID stores the user ID in the context
 func SetUserID(ctx context.Context, uid int64) context.Context {
 	return context.WithValue(ctx, userIDKey, uid)
 }
 
+// UserID extracts the user ID from the context
 func UserID(ctx context.Context) (int64, bool) {
 	v := ctx.Value(userIDKey)
 	if v == nil {

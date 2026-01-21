@@ -1,15 +1,17 @@
 package main
 
 import (
+	"log"
+	"net/http"
+	"time"
+
 	"github.com/delyke/urlShortener/internal/app"
+	"github.com/delyke/urlShortener/internal/audit"
 	"github.com/delyke/urlShortener/internal/config"
 	"github.com/delyke/urlShortener/internal/handler"
 	"github.com/delyke/urlShortener/internal/logger"
 	"github.com/delyke/urlShortener/internal/repository"
 	"github.com/delyke/urlShortener/internal/service"
-	"log"
-	"net/http"
-	"time"
 )
 
 func main() {
@@ -40,6 +42,23 @@ func main() {
 	svc := service.NewURLService(repo, cfg, 10*time.Second, 100)
 	svc.StartDeleter()
 	defer svc.StopDeleter()
+
+	if cfg.AuditFile != "" {
+		observer, err := audit.NewFileObserver(cfg.AuditFile)
+		if err != nil {
+			l.Fatal("Failed to initialize audit file observer: ", err)
+		}
+		svc.RegisterAuditObserver(observer)
+	}
+
+	if cfg.AuditURL != "" {
+		observer, err := audit.NewHTTPObserver(cfg.AuditURL, nil)
+		if err != nil {
+			l.Fatal("Failed to initialize audit http observer: ", err)
+		}
+		svc.RegisterAuditObserver(observer)
+	}
+
 	h := handler.NewHandler(svc, cfg, l)
 	l.Info("Running server on", cfg.RunAddr)
 

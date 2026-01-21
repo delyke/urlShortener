@@ -2,9 +2,11 @@ package config
 
 import (
 	"flag"
+
 	"github.com/caarlos0/env/v6"
 )
 
+// Config stores runtime configuration for the URL shortener service
 type Config struct {
 	RunAddr         string `env:"SERVER_ADDRESS"`
 	BaseAddr        string `env:"BASE_URL"`
@@ -13,8 +15,12 @@ type Config struct {
 	DatabaseDSN     string `env:"DATABASE_DSN"`
 	AuthCookieName  string `env:"AUTH_COOKIE_NAME"`
 	HMACSecret      string `env:"HMAC_SECRET"`
+	AuditFile       string `env:"AUDIT_FILE"`
+	AuditURL        string `env:"AUDIT_URL"`
+	PprofEnabled    bool   `env:"PPROF_ENABLED"`
 }
 
+// GetConfig reads configuration from environment variables and CLI flags
 func GetConfig() (*Config, error) {
 	runAddr := flag.String("a", ":8080", "Run server address")
 	baseAddr := flag.String("b", "http://localhost:8080", "Base server address")
@@ -23,6 +29,9 @@ func GetConfig() (*Config, error) {
 	databaseDSN := flag.String("d", "", "Database DSN")
 	authCookieName := flag.String("c", "Authorization", "Auth cookie name")
 	hmacSecret := flag.String("s", "default-secret", "HMAC secret")
+	auditFile := flag.String("audit-file", "", "Audit file path")
+	auditURL := flag.String("audit-url", "", "Audit server URL")
+	pprofEnabled := flag.Bool("pprof", false, "Enable pprof endpoint")
 
 	flag.Parse()
 
@@ -59,6 +68,18 @@ func GetConfig() (*Config, error) {
 
 	if cfg.HMACSecret == "" {
 		cfg.HMACSecret = *hmacSecret
+	}
+
+	if cfg.AuditFile == "" {
+		cfg.AuditFile = *auditFile
+	}
+
+	if cfg.AuditURL == "" {
+		cfg.AuditURL = *auditURL
+	}
+
+	if !cfg.PprofEnabled {
+		cfg.PprofEnabled = *pprofEnabled
 	}
 
 	return &cfg, nil

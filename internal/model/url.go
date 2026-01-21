@@ -1,5 +1,6 @@
 package model
 
+// URL represents a shortened URL record.
 type URL struct {
 	UUID        string `json:"uuid"`
 	OriginalURL string `json:"original_url"`
